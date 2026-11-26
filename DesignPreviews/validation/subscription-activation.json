@@ -1,0 +1,16 @@
+{
+  "app_id": "6478957951",
+  "product_id": "299",
+  "project": "applaz-32772",
+  "database": "applaz-wellness",
+  "database_rules": "deployed deny direct clients",
+  "backend_functions": "all eight deployed with WELLNESS_ENABLED=true at user request",
+  "policy_tests": "11 passed",
+  "lint": "passed",
+  "apple_private_key": "original p8 repaired and redeployed",
+  "apple_sandbox_probe": "4000006 invalid transaction ID, no purchase verified",
+  "openai_smoke": "HTTP 200 completed with saved key",
+  "live_purchases": "enabled; no end-to-end transaction tested; sandbox account allowlist removed and deployed",
+  "build": "1.0.14 (10) simulator build passed",
+  "allowlist_removal_checks": "11 policy tests and ESLint passed"
+}

@@ -65,6 +65,7 @@ struct AIConversation: Codable, Identifiable {
     static let shared = AIChatStore()
     @Published private(set) var conversations: [AIConversation] = []
     @Published var syncNotice: String?
+    @Published private(set) var savedOnDevice = false
     private var account = "guest"
     private var generation = UUID()
     private var listener: AuthStateDidChangeListenerHandle?
@@ -85,7 +86,7 @@ struct AIConversation: Codable, Identifiable {
     }
     private func switchAccount(_ uid: String) {
         guard uid != account || conversations.isEmpty else { return }
-        account = uid; generation = UUID(); pending?.cancel(); pending = nil; syncing = false; dirty = []; lastSync = 0
+        account = uid; savedOnDevice = false; generation = UUID(); pending?.cancel(); pending = nil; syncing = false; dirty = []; lastSync = 0
         conversations = (try? WellnessCodec.decoder.decode([AIConversation].self, from: Data(contentsOf: file))) ?? []
         Task { await sync() }
     }
@@ -102,8 +103,8 @@ struct AIConversation: Codable, Identifiable {
         var deleted = thread; deleted.isDeleted = true; deleted.messages = []; deleted.title = ""; deleted.scope = AIScope(key: "deleted", title: ""); save(deleted)
     }
     private func persist() {
-        do { try WellnessCodec.encoder.encode(conversations).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
-        catch { syncNotice = "Your conversation couldn’t be saved: " + error.localizedDescription }
+        do { try WellnessCodec.encoder.encode(conversations).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]); savedOnDevice = true }
+        catch { savedOnDevice = false; syncNotice = "Your conversation couldn’t be saved: " + error.localizedDescription }
     }
     func sync() async {
         guard account != "guest", Auth.auth().currentUser?.uid == account, !syncing else { return }
@@ -133,8 +134,11 @@ struct AIConversation: Codable, Identifiable {
                 cursor = response["cursor"] as? [String: Any]
             } while cursor != nil
             lastSync = conversations.map { $0.updatedAt.timeIntervalSince1970 * 1000 }.max() ?? lastSync
-            persist(); syncNotice = nil
-        } catch { if token == generation { syncNotice = "Chats are saved on this device. Cloud sync is unavailable right now." } }
+            persist(); if savedOnDevice { syncNotice = nil }; CloudSaveWarning.recovered("chats:" + owner)
+        } catch { if token == generation {
+            syncNotice = (savedOnDevice ? "Chats are saved on this device. Cloud sync: " : "Couldn’t confirm a device save. Cloud sync: ") + error.localizedDescription
+            CloudSaveWarning.report(error, key: "chats:" + owner, savedLocally: savedOnDevice)
+        } }
     }
 }
 struct AINoteRecord {
@@ -407,6 +411,7 @@ struct InlineAIChat: View {
     var scopeProvider: (() -> AIScope)? = nil
     @StateObject private var model: AIConversationModel
     @ObservedObject private var subscription = SubscriptionCenter.shared
+    @ObservedObject private var chatStore = AIChatStore.shared
     @State private var question = ""
     @State private var paywall = false
     @State private var started = false
@@ -455,7 +460,7 @@ struct InlineAIChat: View {
             if model.busy { HStack { Spacer(); AIThinkingOrb(); Spacer() } }
             if let error = model.error { Text(error).font(.footnote) }
             HStack { TextField(model.thread.messages.isEmpty ? (scope.includeAll ? "Ask all my notebooks…" : scope.noteID != nil || !scope.fixedContext.isEmpty ? "Ask about this note…" : "Ask this notebook…") : "Ask a follow-up…", text: $question).accessibilityIdentifier("AIQuestion"); Button { send() } label: { Image(systemName: "arrow.up.circle").font(.system(size: 25)).foregroundColor(.applazAccent) }.accessibilityLabel("Send question").disabled(model.busy || question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }.padding(12).background(Color.white.opacity(0.75)).clipShape(Capsule()).overlay(Capsule().stroke(Color.applazAccent.opacity(0.15)))
-            if !compact && !model.thread.messages.isEmpty { Text("Private · Conversation saved").font(.caption2).foregroundColor(.black.opacity(0.5)) }
+            if !compact && !model.thread.messages.isEmpty { Text(chatStore.savedOnDevice ? "Private · Saved on this device" : "Private · Device save not confirmed").font(.caption2).foregroundColor(.black.opacity(0.5)) }
         }.foregroundColor(.black).wellnessCard(embedded: embedded)
             .onAppear { if let openingQuestion, !started { started = true; question = openingQuestion; send() } }
             .sheet(isPresented: $paywall) { NavigationView { SubscriptionWelcomeView(onClose: { paywall = false }, onPurchased: { paywall = false }) } }

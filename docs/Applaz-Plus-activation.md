@@ -5,7 +5,7 @@ The iPhone home-screen display name remains Applaz. The existing three-bar logo 
 
 ## App Store Connect
 
-1. Complete Paid Apps agreements, banking and tax information. Create an auto-renewable subscription in a subscription group, product ID `com.applaz.plus.weekly`, duration **one week**, US price **$2.99**. If there are existing subscribers, review their subscription group before creating another group; this implementation preserves verified legacy ad-free access without granting AI credits.
+1. Complete Paid Apps agreements, banking and tax information. Create an auto-renewable subscription in a subscription group, product ID `299`, duration **one week**, US price **$2.99**. If there are existing subscribers, review their subscription group before creating another group; this implementation preserves verified legacy ad-free access without granting AI credits.
 2. Add an introductory offer: **one week free**, available to eligible customers. Apple determines eligibility. Users must confirm an actual subscription purchase through Apple to start the trial. Dismissing the welcome screen grants no credits.
 3. Add localized subscription name and description, review screenshot, review account and notes. Complete App Privacy disclosures for Firebase account/private notebook storage and selected content sent to OpenAI. Publish an accurate app privacy policy URL; use Apple's standard EULA unless supplying custom terms. The in-app AI privacy screen describes selected content and offers consent/revocation.
 4. In Users and Access → Integrations, create an App Store Server API key; securely retain issuer ID, key ID and private `.p8` key. Find the numeric App Store app ID. Never put private keys in the iOS app or Git.
@@ -17,10 +17,10 @@ The existing project remains **applaz-32772**, bundle **com.applaz**. Existing R
 
 1. In this Firebase project create a **separate named Firestore database `applaz-wellness`**. Deploy `functions/wellness/firestore.rules` to that database only: all direct client reads and writes are denied. Do not replace the existing default database or its rules. Cloud Functions access this private database with the Admin SDK and authenticated Firebase UID.
 2. Use Node 22; run `npm ci`, `npm test` and `npm run lint` in `functions`. Set secret values with Firebase CLI: `OPENAI_API_KEY`, `APPLE_IAP_PRIVATE_KEY`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`. The OpenAI project needs Responses API access to `gpt-5.6-luna`, a billing method and spending alerts. Keep all secrets out of Git.
-3. Set environment `APPLE_APP_ID` to the numeric ID and `SANDBOX_TEST_UIDS` to comma-separated test Firebase UIDs. Sandbox has a lifetime cap of 10 real AI credits per original purchase, so accelerated renewals cannot produce unlimited paid API calls.
+3. Set environment `APPLE_APP_ID` to the numeric ID for the app. Verified sandbox purchases are available to any signed-in account; no test UID allowlist is required. Sandbox has a lifetime cap of 10 real AI credits per original purchase, so accelerated renewals cannot produce unlimited paid API calls.
 4. Deploy only new functions initially: `wellnessStatus`, `wellnessSync`, `wellnessChatSync`, `wellnessConsent`, `subscriptionAccess`, `wellnessAI`, `deletePrivateWellness`, `deleteDisabledPrivateWellness`. Readiness is disabled by default. After testing set `WELLNESS_ENABLED=true` and redeploy. The client checks readiness before enabling purchase. Configure Firestore TTL on privateAccounts/*/requests `expiresAt` to discard AI response caches after about one day. Raw meal images are not stored in the public Storage bucket.
 5. Set server max instance and billing alerts appropriate to launch volume. The per-account transaction ledger protects the AI allowance; it does not cap all Firebase infrastructure expenses, fraudulent signups, acquisition cost or taxes. Fresh Apple status is checked before AI calls. A purchased original transaction can bind to only one Firebase UID. Account deletion removes private notebook data; an ownership/spend ledger binding is retained to prevent recycling a receipt.
-6. Real payment and API verification require your configured accounts. Building the app alone does not activate a subscription. Unknown currency/price combinations fail closed; this budget policy currently accepts USD $2.99 only. Configure verified proceeds policies before opening other storefront prices.
+6. Real payment and API verification require your configured accounts. Building the app alone does not activate a subscription. Apple-localized currencies and prices are accepted for verified product 299. USD margin examples do not guarantee the same margin in every storefront after local taxes and exchange rates.
 
 ## Usage economics (estimates, not a profit guarantee)
 
@@ -99,3 +99,11 @@ The build and focused simulator UI check passed. Verification covered opening af
 ## Translucent large actions — build 1.0.14 (9)
 
 Create Notebook and the large authentication, subscription and meal-confirmation actions now use pale translucent surfaces, dark labels and a subtle outline in place of solid navy fills. Existing action handlers, purchase gating and disabled states remain in place. Navy remains the accent for small icons, selection and checklist state. The simulator build passed. Store artwork includes a seventh matching New Notebook screenshot for iPhone and iPad.
+
+## Storage and subscription fixes — build 1.0.14 (12)
+
+Product 299 is matched in client and server; app ID is 6478957951. The backend is enabled and accepts Apple-localized prices. Test-account allowlisting is removed. Live purchase/restore has not been completed; sandbox lifetime AI budget remains ten credits.
+
+Health text and checklist syncing no longer has a 500/700 KB account allowance. Cloud snapshots are split into private Firestore documents rather than a single size-capped account field. The former 500 KB allowance now applies only to decoded photo bytes. Existing photos are retained; rejected new photos do not reject text changes. Removing photos makes room for later uploads. The eight-photo-per-note cap is removed. Chat's existing per-conversation cloud-record/message limits remain.
+
+The photo warning uses the app's translucent design and exactly: “Your storage is full. Delete photos to upload more.” Successful device writes are required before showing the saved status. Native screenshot: DesignPreviews/photo-storage/popup.png (simulated photo capacity error, offline sample records). Build, fourteen backend policy checks, ESLint and the popup display/dismissal check passed. Real-account multi-device sync and purchases remain separate live verification.

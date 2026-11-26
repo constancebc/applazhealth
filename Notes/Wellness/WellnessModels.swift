@@ -127,6 +127,7 @@ enum WellnessTemplate: String, CaseIterable, Identifiable {
     private var syncing = false
     private var generation = UUID()
     private var saveGeneration = UUID()
+    private var localSaveSucceeded = false
     private var file: URL {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("PrivateWellness", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -146,7 +147,7 @@ enum WellnessTemplate: String, CaseIterable, Identifiable {
     func switchAccount(_ uid: String) {
         guard uid != account || !document.initialized else { return }
         scheduledSync?.cancel(); scheduledSync = nil
-        account = uid; generation = UUID(); syncing = false
+        account = uid; localSaveSucceeded = false; generation = UUID(); syncing = false
         document = (try? WellnessCodec.decoder.decode(WellnessDocument.self, from: Data(contentsOf: file))) ?? WellnessDocument()
         if !document.initialized {
             document.initialized = true
@@ -222,8 +223,8 @@ enum WellnessTemplate: String, CaseIterable, Identifiable {
         }
     }
     private func persistLocal() {
-        do { let data = try WellnessCodec.encoder.encode(document); try data.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]); syncMessage = nil }
-        catch { syncMessage = "Couldn’t save on this device: \(error.localizedDescription)" }
+        do { let data = try WellnessCodec.encoder.encode(document); try data.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]); syncMessage = nil; localSaveSucceeded = true }
+        catch { localSaveSucceeded = false; syncMessage = "Couldn’t save on this device: \(error.localizedDescription)" }
     }
     func sync() async {
         guard !syncing, account != "guest", Auth.auth().currentUser?.uid == account else { return }
@@ -263,8 +264,15 @@ enum WellnessTemplate: String, CaseIterable, Identifiable {
                     else { merged.meals.append(m) }
                 }
                 document = merged; persistLocal()
+                if response["photoStorageFull"] as? Bool == true {
+                    syncMessage = "Your storage is full. Delete photos to upload more."
+                    CloudSaveWarning.report(WellnessAPI.failure("Photo storage is full."), key: "photos:" + owner, savedLocally: localSaveSucceeded)
+                } else { CloudSaveWarning.recovered("photos:" + owner) }
             }
-        } catch { if token == generation { syncMessage = "Saved on this device. Cloud sync: \(error.localizedDescription)" } }
+        } catch { if token == generation {
+            syncMessage = (localSaveSucceeded ? "Saved on this device. Cloud sync: " : "Couldn’t confirm a device save. Cloud sync: ") + error.localizedDescription
+            CloudSaveWarning.report(error, key: "notebooks:" + owner, savedLocally: localSaveSucceeded)
+        } }
     }
     func context(notebookID: String? = nil) -> String {
         let selected = notebooks.filter { notebookID == nil || $0.id == notebookID }

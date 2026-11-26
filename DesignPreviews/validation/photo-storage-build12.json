@@ -1,0 +1,12 @@
+{
+  "build": "1.0.14 (12)",
+  "simulator_build": "passed",
+  "backend_tests": "14 passed",
+  "lint": "passed",
+  "popup_ui_test": "passed; exact requested message visible and dismissal works",
+  "preview": "Native app screenshot with simulated photo capacity error and offline sample records",
+  "text_storage": "no product storage allowance; snapshots split into Firestore chunks",
+  "photos": "500000 decoded bytes per account; no per-note photo count cap; blocked photos do not block text syncing",
+  "subscriptions": "product 299, app 6478957951; international localized prices accepted; test-account allowlist removed",
+  "remaining_limits": "AI budgets, sandbox 10-credit lifetime cap, 120-message conversation limit and 500KB cloud chat record limit remain; actual international margin varies"
+}

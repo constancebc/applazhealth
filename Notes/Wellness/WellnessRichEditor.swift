@@ -48,8 +48,13 @@ struct WellnessNotePhotos: View {
             } } }
             if let error { Text(error).font(.caption) }
         }.sheet(isPresented: $picker) { MealPhotoPicker { image in
-            guard photos.count < 8 else { error = "A note can hold up to eight photos."; return }
             guard let data = ApplazImagePayload.jpeg(from: image) else { error = "This photo couldn’t be prepared. Please choose another."; return }
+            let used = store.notebooks.flatMap { $0.notes }.flatMap { $0.attachments ?? [] }.reduce(0) { $0 + (Data(base64Encoded: $1)?.count ?? 0) }
+            guard used + data.count <= 500_000 else {
+                CloudSaveWarning.report(WellnessAPI.failure("Photo storage is full."), key: "photo-picker", savedLocally: true)
+                return
+            }
+            CloudSaveWarning.recovered("photo-picker")
             update { $0.append(data.base64EncodedString()) }
         } }
     }

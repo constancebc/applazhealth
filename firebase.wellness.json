@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "applaz-wellness",
+      "rules": "functions/wellness/firestore.rules"
+    }
+  ]
+}

@@ -30,7 +30,6 @@ async function verify(signed, uid) {
     try { verified = await new SignedDataVerifier(roots, true, env, "com.applaz", Number(process.env.APPLE_APP_ID)).verifyAndDecodeTransaction(signed); environment = env; break; } catch (_) { /* Try the other Apple environment. */ }
   }
   if (!verified) throw new Error("Apple couldn’t verify this subscription.");
-  if (environment === Environment.SANDBOX && !(process.env.SANDBOX_TEST_UIDS || "").split(",").includes(uid)) throw new Error("This test purchase is not enabled for this account.");
   const client = new AppStoreServerAPIClient(process.env.APPLE_IAP_PRIVATE_KEY, process.env.APPLE_IAP_KEY_ID, process.env.APPLE_IAP_ISSUER_ID, "com.applaz", environment);
   // Fresh server status prevents an old signed receipt restoring refunded access.
   const status = await client.getAllSubscriptionStatuses(verified.originalTransactionId);
@@ -50,14 +49,26 @@ exports.wellnessSync = call(async (data, uid) => {
   const ref = userRef(uid);
   const state = await db().runTransaction(async tx => {
     const snap = await tx.get(ref); const prior = snap.data() || {};
-    const document = policy.mergeDocument(prior.document, data.document);
+    // Read legacy snapshots once, then store scalable chunks rather than one capped document.
+    let previous = prior.document;
+    if (prior.snapshotChunks) {
+      const refs = Array.from({length: prior.snapshotChunks}, (_, i) => ref.collection("snapshot").doc(String(i)));
+      const chunks = await tx.getAll(...refs);
+      previous = JSON.parse(chunks.map(chunk => chunk.data().text).join(""));
+    }
+    const photos = policy.photoCapacity(policy.mergeDocument(previous, data.document), previous);
+    const document = photos.document;
+    const chunks = policy.snapshotChunks(document);
+
     const pending = {...(prior.publicPending || {})};
     for (const note of document.notebooks) {
-      const old = prior.document?.notebooks?.find(n => n.id === note.id);
+      const old = previous?.notebooks?.find(n => n.id === note.id);
       if (!old || old.updatedAt !== note.updatedAt) pending[note.id] = note.updatedAt;
     }
-    tx.set(ref, {document, publicPending: pending}, {merge: true});
-    return {document, pending, fingerprints: prior.publicFingerprints || {}};
+    chunks.forEach((text, i) => tx.set(ref.collection("snapshot").doc(String(i)), {text}));
+    for (let i = chunks.length; i < (prior.snapshotChunks || 0); i++) tx.delete(ref.collection("snapshot").doc(String(i)));
+    tx.set(ref, {document: admin.firestore.FieldValue.delete(), snapshotChunks: chunks.length, publicPending: pending}, {merge: true});
+    return {document, pending, fingerprints: prior.publicFingerprints || {}, photoStorageFull: photos.photoStorageFull};
   });
   for (const notebook of state.document.notebooks.filter(n => state.pending[n.id] !== undefined)) {
     const published = policy.publicNotebook(notebook);
@@ -81,7 +92,7 @@ exports.wellnessSync = call(async (data, uid) => {
       }
     });
   }
-  return {document: state.document};
+  return {document: state.document, photoStorageFull: state.photoStorageFull};
 });
 exports.wellnessConsent = call(async (data, uid) => {
   const consent = data.allow === true; await userRef(uid).set({consent, consentVersion: 1, consentAt: Date.now()}, {merge: true}); return {consent};

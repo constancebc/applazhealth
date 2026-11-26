@@ -2,15 +2,15 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const p = require("../wellness/policy");
-const transaction = {bundleId: "com.applaz", productId: "com.applaz.plus.weekly", currency: "USD", price: 2990, originalTransactionId: "original", transactionId: "one", expiresDate: Date.now() + 604800000, purchaseDate: Date.now(), environment: "Production"};
+const transaction = {bundleId: "com.applaz", productId: "299", currency: "USD", price: 2990, originalTransactionId: "original", transactionId: "one", expiresDate: Date.now() + 604800000, purchaseDate: Date.now(), environment: "Production"};
 test("verified trial and paid costs stay within planned limits", () => {
   assert.equal(p.verifiedPeriod(transaction).capacity, 100);
   assert.equal(p.verifiedPeriod({...transaction, price: 0, offerDiscountType: "FREE_TRIAL"}).capacity, 10);
   assert.equal(100 * p.CREDIT_MICRO_USD, 400000);
   assert.equal(10 * p.CREDIT_MICRO_USD, 40000);
 });
-test("expired, revoked, wrong price and wrong product fail closed", () => {
-  for (const change of [{expiresDate: 1}, {revocationDate: Date.now()}, {price: 4990}, {currency: "EUR"}, {productId: "other"}]) assert.throws(() => p.verifiedPeriod({...transaction, ...change}));
+test("expired, revoked and wrong product fail closed", () => {
+  for (const change of [{expiresDate: 1}, {revocationDate: Date.now()}, {productId: "other"}]) assert.throws(() => p.verifiedPeriod({...transaction, ...change}));
 });
 test("restore never replenishes spent credits or transfers an account", () => {
   const period = {...p.verifiedPeriod(transaction), purchaseDate: transaction.purchaseDate};
@@ -75,4 +75,32 @@ test("old notebook edits and replayed sharing intents cannot undo newer privacy"
   assert.equal(edited.name, "Edited on another device"); assert.equal(edited.isPrivate, true);
   const replay = p.mergeDocument({notebooks: [edited], meals: []}, {notebooks: [{...old, updatedAt: now + 2000, visibilityIntent: "ffffffff-bbbb-cccc-dddd"}], meals: []}).notebooks[0];
   assert.equal(replay.isPrivate, true);
+});
+test("photo capacity never blocks text, and removing photos frees capacity", () => {
+  const photo = Buffer.from([255, 216, 1, 2]).toString("base64");
+  const newerPhoto = Buffer.from([255, 216, 3, 4]).toString("base64");
+  const prior = {notebooks: [{id: "book", updatedAt: 0, notes: [{id: "note", attachments: [photo]}]}]};
+  const incoming = {notebooks: [{id: "book", updatedAt: Date.now(), notes: [{id: "note", body: "x".repeat(800000), attachments: [photo, newerPhoto]}]}], meals: []};
+  const merged = p.mergeDocument(prior, incoming);
+  const limited = p.photoCapacity(merged, prior, 4);
+  assert.equal(limited.photoStorageFull, true);
+  assert.equal(limited.document.notebooks[0].notes[0].body.length, 800000);
+  assert.deepEqual(limited.document.notebooks[0].notes[0].attachments, [photo]);
+  incoming.notebooks[0].notes[0].attachments = [newerPhoto];
+  const freed = p.photoCapacity(incoming, prior, 4);
+  assert.equal(freed.photoStorageFull, false);
+  assert.deepEqual(freed.document.notebooks[0].notes[0].attachments, [newerPhoto]);
+});
+test("large text snapshots split without losing unicode or imposing a total storage cap", () => {
+  const document = {notebooks: [{id: "a", body: "🌸".repeat(300000)}], meals: []};
+  const chunks = p.snapshotChunks(document);
+  assert.ok(chunks.length > 1);
+  assert.ok(chunks.every(text => Buffer.byteLength(text) < 1000000));
+  assert.deepEqual(JSON.parse(chunks.join("")), document);
+});
+
+test("verified international prices activate the same weekly product", () => {
+  for (const currency of ["USD", "EUR", "GBP", "JPY", "CAD", "INR"]) {
+    assert.equal(p.verifiedPeriod({...transaction, currency, price: 3990}).capacity, 100);
+  }
 });

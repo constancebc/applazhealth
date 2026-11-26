@@ -6,7 +6,7 @@ import Security
 
 @MainActor final class SubscriptionCenter: ObservableObject {
     static let shared = SubscriptionCenter()
-    static let productID = "com.applaz.plus.weekly"
+    static let productID = "299"
     @Published var serviceReady = false
     @Published var product: Product?
     @Published var eligibleTrial = false
@@ -47,8 +47,7 @@ import Security
             serviceReady = (try? await WellnessAPI.call("wellnessStatus", [:])["ready"] as? Bool) == true
             product = try await Product.products(for: [Self.productID]).first
             if let loaded = product {
-                guard loaded.priceFormatStyle.currencyCode == "USD", loaded.price == Decimal(string: "2.99"),
-                      loaded.subscription?.subscriptionPeriod.unit == .week,
+                guard loaded.subscription?.subscriptionPeriod.unit == .week,
                       loaded.subscription?.subscriptionPeriod.value == 1 else {
                     product = nil; eligibleTrial = false; message = "Applaz Plus isn’t available in your region yet."; return
                 }

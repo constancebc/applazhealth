@@ -179,3 +179,56 @@ struct ApplazBubbleButtonStyle: ButtonStyle {
             .overlay(Capsule().stroke(Color.applazAccent.opacity(0.16)))
     }
 }
+
+/// One warning per failure episode, shared by notebook and chat sync.
+@MainActor enum CloudSaveWarning {
+    private static var shown: Set<String> = []
+    static func recovered(_ key: String) { shown.remove(key) }
+    static func report(_ error: Error, key: String, savedLocally: Bool) {
+        let reason = error.localizedDescription
+        let limited = reason.localizedCaseInsensitiveContains("photo storage is full")
+        guard limited, !shown.contains(key) else { return }
+        present(key: key, reason: reason, savedLocally: savedLocally)
+    }
+    private static func present(key: String, reason: String, savedLocally: Bool) {
+        guard !shown.contains(key) else { return }
+        guard UIApplication.shared.applicationState == .active,
+              let presenter = UIApplication.topViewController(), presenter.viewIfLoaded?.window != nil,
+              !(presenter is UIAlertController), !presenter.isBeingDismissed else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { present(key: key, reason: reason, savedLocally: savedLocally) }
+            return
+        }
+        shown.insert(key)
+        let popup = UIHostingController(rootView: PhotoStoragePopup())
+        popup.modalPresentationStyle = .overFullScreen
+        popup.modalTransitionStyle = .crossDissolve
+        popup.view.backgroundColor = .clear
+        presenter.present(popup, animated: true)
+
+    }
+}
+
+
+struct PhotoStoragePopup: View {
+    @Environment(\.presentationMode) private var presentation
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.16).ignoresSafeArea()
+                .onTapGesture { presentation.wrappedValue.dismiss() }
+            VStack(spacing: 20) {
+                Text("Your storage is full. Delete photos to upload more.")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.black).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("PhotoStorageWarning")
+                Button("OK") { presentation.wrappedValue.dismiss() }
+                    .buttonStyle(ApplazBubbleButtonStyle())
+            }
+            .padding(24)
+            .background(ZStack { WellnessBackground(); Color.white.opacity(0.4) }.clipShape(RoundedRectangle(cornerRadius: 24)))
+            .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.applazAccent.opacity(0.15)))
+            .shadow(color: Color.applazAccent.opacity(0.12), radius: 22, y: 8)
+            .padding(32).frame(maxWidth: 410)
+        }.accessibilityAddTraits(.isModal)
+    }
+}

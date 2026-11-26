@@ -1,0 +1,7 @@
+{
+  "build": "1.0.14 (11)",
+  "simulator_build": "passed",
+  "popup_ui_test": "passed: visible, explains device saving, dismissible",
+  "preview": "Actual native alert with simulated cloud storage error and sample offline records",
+  "scope": "Notebook and chat cloud size failures trigger warning; successful local writes required for saved status; limits unchanged"
+}

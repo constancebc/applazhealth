@@ -3,11 +3,9 @@ const crypto = require("node:crypto");
 const CREDIT_MICRO_USD = 4000;
 function fail(message) { throw new Error(message); }
 function verifiedPeriod(transaction, now = Date.now()) {
-  if (transaction.bundleId !== "com.applaz" || transaction.productId !== "com.applaz.plus.weekly") fail("Wrong subscription.");
+  if (transaction.bundleId !== "com.applaz" || transaction.productId !== "299") fail("Wrong subscription.");
   if (transaction.revocationDate || transaction.expiresDate <= now || transaction.purchaseDate > now + 60000) fail("Subscription is inactive.");
-  // USD 2.99 is 2990 in Apple's milliunit price field. Unknown storefront economics fail closed.
   const trial = transaction.offerDiscountType === "FREE_TRIAL";
-  if (transaction.currency !== "USD" || (!trial && transaction.price !== 2990)) fail("This subscription price is not supported yet.");
   if (!transaction.originalTransactionId || !transaction.transactionId) fail("Missing transaction identity.");
   return {transactionID: transaction.transactionId, originalID: transaction.originalTransactionId,
     expiresAt: transaction.expiresDate, capacity: trial ? 10 : 100, trial,
@@ -55,7 +53,6 @@ function requestPayload(data) {
 }
 function mergeDocument(current = {}, incoming) {
   if (!incoming || !Array.isArray(incoming.notebooks) || !Array.isArray(incoming.meals)) fail("Invalid notebook data.");
-  if (Buffer.byteLength(JSON.stringify(incoming)) > 500000) fail("Private notebook storage is full. Remove unused content before syncing.");
   const merge = (a = [], b, notebookPrivacy = false) => {
     const records = new Map(a.map(x => [x.id, x]));
     for (const x of b) {
@@ -80,7 +77,6 @@ function mergeDocument(current = {}, incoming) {
     return [...records.values()];
   };
   const result = {initialized: true, notebooks: merge(current.notebooks, incoming.notebooks, true), meals: merge(current.meals, incoming.meals)};
-  if (Buffer.byteLength(JSON.stringify(result)) > 700000) fail("Private notebook storage is full.");
   return result;
 }
 function chartResponse(value, metrics) {
@@ -126,3 +122,42 @@ function publicNotebook(notebook) {
   return result;
 }
 module.exports.publicNotebook = publicNotebook;
+
+// Photo capacity never prevents text/checklist updates from being stored.
+function photoCapacity(document, prior = {}, limit = 500000) {
+  const result = JSON.parse(JSON.stringify(document));
+  const old = new Map();
+  for (const n of prior.notebooks || []) for (const note of n.notes || []) {
+    const counts = new Map();
+    for (const photo of note.attachments || []) counts.set(photo, (counts.get(photo) || 0) + 1);
+    old.set(n.id + "/" + note.id, counts);
+  }
+  let used = 0, blocked = false;
+  const pending = [];
+  for (const n of result.notebooks) {
+    if (n.isDeleted) { n.notes = []; n.items = []; continue; }
+    for (const note of n.notes || []) {
+      const accepted = []; const existing = old.get(n.id + "/" + note.id) || new Map();
+      for (const photo of note.attachments || []) {
+        if (typeof photo !== "string" || photo.length > 26668 || !/^[A-Za-z0-9+/]*={0,2}$/.test(photo)) fail("Invalid photo.");
+        const bytes = Buffer.from(photo, "base64");
+        if (!bytes.length || bytes.length > 20000 || bytes[0] !== 255 || bytes[1] !== 216) fail("Photos must be JPEG and at most 20 KB.");
+        if (existing.get(photo) > 0) { existing.set(photo, existing.get(photo) - 1); accepted.push(photo); used += bytes.length; }
+        else pending.push({accepted, photo, size: bytes.length});
+      }
+      note.attachments = accepted;
+    }
+  }
+  for (const item of pending) {
+    if (used + item.size <= limit) { item.accepted.push(item.photo); used += item.size; }
+    else blocked = true;
+  }
+  return {document: result, photoStorageFull: blocked, photoBytes: used};
+}
+function snapshotChunks(document) {
+  const characters = Array.from(JSON.stringify(document)); const chunks = [];
+  for (let i = 0; i < characters.length; i += 150000) chunks.push(characters.slice(i, i + 150000).join(""));
+  return chunks;
+}
+module.exports.photoCapacity = photoCapacity;
+module.exports.snapshotChunks = snapshotChunks;

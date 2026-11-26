@@ -30,3 +30,7 @@ GoogleService-Info.plist
 *.mobileprovision
 *service-account*.json
 *serviceAccount*.json
+
+# Local backend configuration
+functions/.env.*
+!functions/.env.example
