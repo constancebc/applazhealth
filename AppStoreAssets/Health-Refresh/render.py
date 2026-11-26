@@ -14,7 +14,7 @@ def bg(w,h):
  return im.resize((w,h),Image.Resampling.BICUBIC)
 def center(im,text,y,size):
  ImageDraw.Draw(im).multiline_text((im.width/2,y),text,font=font(size),fill='#111111',anchor='ma',align='center',spacing=2)
-slides=[('01-notebooks','Reach your goals.\nOne day at a time.','Keep your routines, meals, and notes together.','design-home'),('02-checklist','Small habits.\nSteady progress.','Make daily checklists your own.','navigated-note'),('03-workout','Your routine.\nYour rhythm.','Plan workouts and check off each exercise.','navigated-workout'),('04-insights','See your\nconsistency.','Explore daily, weekly, and monthly patterns.','navigated-charts'),('05-food-diary','Make room for\na daily food diary.','Log meals and review your daily tally.','navigated-food'),('06-newsfeed','Share what\nkeeps you going.','Discover routines and reflections from others.','newsfeed')]
+slides=[('01-notebooks','Reach your goals.\nOne day at a time.','Keep your routines, meals, and notes together.','design-home'),('02-checklist','Small habits.\nSteady progress.','Make daily checklists your own.','navigated-note'),('03-workout','Your routine.\nYour rhythm.','Plan workouts and check off each exercise.','navigated-workout'),('04-insights','See your\nconsistency.','Explore daily, weekly, and monthly patterns.','navigated-charts'),('05-food-diary','Make room for\na daily food diary.','Log meals and review your daily tally.','navigated-food'),('06-newsfeed','Share what\nkeeps you going.','Discover routines and reflections from others.','newsfeed'),('07-new-notebook','Make it\nyour own.','Choose a template, a layout, and who can see it.','new-notebook-preview')]
 validation=[]
 for kind,w,h,cw in [('iphone',1320,2868,920),('iphone-medium',1206,2622,840),('ipad',2064,2752,1450)]:
  folder=out/f'{kind}-{w}x{h}';folder.mkdir(parents=True,exist_ok=True)
@@ -32,7 +32,7 @@ for kind,w,h,cw in [('iphone',1320,2868,920),('iphone-medium',1206,2622,840),('i
   path=folder/(filename+'.png');im.convert('RGB').save(path)
   with Image.open(path) as check:assert check.size==(w,h) and check.mode=='RGB'
   validation.append({'file':str(path.relative_to(out)),'pixels':[w,h],'mode':'RGB','alpha':False,'native_device':'iPad Pro 13-inch M5' if pad else 'iPhone 18 Pro','route':route})
- sheet=Image.new('RGB',(1800,round(300*h/w)),'white')
+ sheet=Image.new('RGB',(300*len(slides),round(300*h/w)),'white')
  for i,(filename,*_) in enumerate(slides):sheet.paste(Image.open(folder/(filename+'.png')).resize((300,sheet.height),Image.Resampling.LANCZOS),(i*300,0))
  sheet.save(out/f'{kind}-overview.png')
 (out/'validation.json').write_text(json.dumps(validation,indent=2))

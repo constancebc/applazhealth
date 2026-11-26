@@ -1,11 +1,11 @@
 APPLAZ — GOALS DELIVERED
-Final health design · build 1.0.14 (7)
+Final health design · build 1.0.14 (9)
 
 Use individual PNGs from the matching folder:
 - iphone-1320x2868: iPhone with Dynamic Island (large display).
 - iphone-medium-1206x2622: iPhone with Dynamic Island (medium display).
 - ipad-2064x2752: iPad 13-inch display.
-Each set contains the same six features. Overview contact sheets are for review only.
+Each set contains the same seven features. Overview contact sheets are for review only.
 Official accepted dimensions and no-alpha rule:
 https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
 

@@ -1,0 +1,28 @@
+{
+  "version": "1.0.14",
+  "build": 9,
+  "simulator_build": "passed",
+  "creation_and_dropdown_check": {
+    "tests": 1,
+    "failures": 0
+  },
+  "ipad_notebook_capture_check": {
+    "tests": 1,
+    "failures": 0
+  },
+  "store_images": {
+    "count": 21,
+    "per_slot": 7,
+    "sizes": [
+      "1320x2868",
+      "1206x2622",
+      "2064x2752"
+    ],
+    "mode": "RGB",
+    "alpha": false
+  },
+  "scope": "Large action surfaces only; existing callbacks and disabled/purchase gating retained. No account or notebook data migrated.",
+  "limits": "Balances remain only on subscription settings. The styled weekly-limit sheet shown in chat is a concept, not added to the app.",
+  "messages_capture": "Current build captured and visually reviewed with fictional health-focused messages.",
+  "other_social_previews": "Existing native captures of unchanged Newsfeed, Profile, Search and shared-note layouts."
+}

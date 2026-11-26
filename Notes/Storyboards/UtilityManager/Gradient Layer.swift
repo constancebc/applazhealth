@@ -202,15 +202,16 @@ class ApplazPrimaryButton: UIButton {
         setBackgroundImage(nil, for: .normal)
         setBackgroundImage(nil, for: .highlighted)
         setTitle(actionTitle, for: .normal)
-        setTitleColor(.white, for: .normal)
-        setTitleColor(UIColor.white.withAlphaComponent(0.85), for: .disabled)
+        backgroundColor = .clear
+        setTitleColor(ApplazAppearance.ink, for: .normal)
+        setTitleColor(ApplazAppearance.ink.withAlphaComponent(0.4), for: .disabled)
         titleLabel?.font = ApplazAppearance.font(18, weight: .medium)
         contentVerticalAlignment = .center
         accessibilityLabel = actionTitle
-        actionSurface.cornerRadius = 16
+        actionSurface.cornerRadius = 28
         actionSurface.cornerCurve = .continuous
         actionSurface.borderWidth = 1
-        actionSurface.borderColor = UIColor.white.withAlphaComponent(0.55).cgColor
+        actionSurface.borderColor = ApplazAppearance.accent.withAlphaComponent(0.16).cgColor
         actionSurface.startPoint = CGPoint(x: 0, y: 0)
         actionSurface.endPoint = CGPoint(x: 1, y: 1)
         layer.insertSublayer(actionSurface, at: 0)
@@ -224,8 +225,8 @@ class ApplazPrimaryButton: UIButton {
         actionSurface.frame = bounds.insetBy(dx: 0, dy: verticalInset)
         let opacity: CGFloat = isEnabled ? 1 : 0.60
         actionSurface.colors = [
-            UIColor(red: 0.11, green: 0.18, blue: 0.39, alpha: opacity).cgColor,
-            UIColor(red: 0.28, green: 0.26, blue: 0.46, alpha: opacity).cgColor
+            UIColor.white.withAlphaComponent(0.66 * opacity).cgColor,
+            UIColor(red: 0.91, green: 0.89, blue: 0.98, alpha: 0.40 * opacity).cgColor
         ]
         CATransaction.commit()
     }
@@ -529,10 +530,13 @@ final class NewNotebookViewController: UIViewController {
         updateVisibilityDescription()
         createButton.setTitle("Create notebook", for: .normal)
         createButton.accessibilityIdentifier = "CreateNotebook"
-        createButton.setTitleColor(.white, for: .normal)
+        createButton.setTitleColor(ApplazAppearance.ink, for: .normal)
+        createButton.setTitleColor(ApplazAppearance.ink.withAlphaComponent(0.45), for: .disabled)
         createButton.titleLabel?.font = ApplazAppearance.font(17, weight: .medium)
-        createButton.backgroundColor = ApplazAppearance.accent
-        createButton.layer.cornerRadius = 14
+        createButton.backgroundColor = UIColor.white.withAlphaComponent(0.58)
+        createButton.layer.cornerRadius = 23
+        createButton.layer.borderWidth = 1
+        createButton.layer.borderColor = ApplazAppearance.accent.withAlphaComponent(0.16).cgColor
         createButton.addTarget(self, action: #selector(createNotebook), for: .touchUpInside)
         let cancel = UIButton(type: .system)
         cancel.setTitle("Cancel", for: .normal)

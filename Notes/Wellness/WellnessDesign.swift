@@ -164,3 +164,18 @@ struct WellnessBottomMenu: View {
             .padding(.horizontal, 12).padding(.top, 6).padding(.bottom, 4)
     }
 }
+
+/// Shared translucent surface for large primary actions.
+struct ApplazBubbleButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var enabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 17, weight: .medium))
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 18).padding(.vertical, 14)
+            .foregroundColor(Color.black.opacity(enabled ? 1 : 0.4))
+            .background(Color.white.opacity(configuration.isPressed ? 0.38 : 0.58))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(Color.applazAccent.opacity(0.16)))
+    }
+}

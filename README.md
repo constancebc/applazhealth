@@ -1,6 +1,6 @@
 # Applaz — Goals Delivered
 
-Native iOS app, version 1.0.14 (8). Current health and fitness design snapshot for `constancebc/applazhealth`.
+Native iOS app, version 1.0.14 (9). Current health and fitness design snapshot for `constancebc/applazhealth`.
 
 ## Build locally
 
@@ -32,4 +32,6 @@ The weekly credit policy is implemented in server source and covered by local po
 
 ## App Store artwork
 
-Use [AppStoreAssets/Health-Refresh](AppStoreAssets/Health-Refresh) and its UPLOAD.txt. Matching six-image sets cover large iPhone, medium iPhone and 13-inch iPad upload slots. PNGs are opaque RGB at validated Apple-accepted dimensions. iPad artwork uses native tablet captures. Overview sheets are for review only. Older asset folders are historical.
+Use [AppStoreAssets/Health-Refresh](AppStoreAssets/Health-Refresh) and its UPLOAD.txt. Matching seven-image sets cover large iPhone, medium iPhone and 13-inch iPad upload slots. PNGs are opaque RGB at validated Apple-accepted dimensions. iPad artwork uses native tablet captures. Overview sheets are for review only. Older asset folders are historical.
+
+Current social and translucent-button previews: `DesignPreviews/bubble-buttons-social`. Weekly-limit notice artwork shown in chat is a concept only; credit balances remain in Settings → Subscription.

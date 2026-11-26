@@ -41,8 +41,7 @@ struct SubscriptionWelcomeView: View {
                     if Auth.auth().currentUser == nil { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { WellnessPresentation.signInAfterPurchase() } }
                 } } } label: {
                     Text(subscription.busy ? "Connecting to Apple…" : (subscription.eligibleTrial ? "Start free trial" : "Continue"))
-                        .font(.headline).frame(maxWidth: .infinity).padding(17).background(Color.applazAccent).foregroundColor(.white).clipShape(Capsule())
-                }.disabled(subscription.busy || subscription.product == nil || !subscription.serviceReady)
+                }.buttonStyle(ApplazBubbleButtonStyle()).disabled(subscription.busy || subscription.product == nil || !subscription.serviceReady)
                 if let message = subscription.message { Text(message).font(.footnote) }
                 if !subscription.serviceReady { Text("Subscriptions will be available soon. You can keep using your notebooks for free.").font(.footnote) }
                 Text(subscription.eligibleTrial ? "No charge today. Your subscription renews at \(subscription.price)/week after the free week unless canceled at least 24 hours before it ends. Manage or cancel in Apple Account settings." : "Renews automatically at \(subscription.price)/week unless canceled at least 24 hours before the current period ends. Manage or cancel in Apple Account settings.").font(.caption).foregroundColor(.black.opacity(0.65))

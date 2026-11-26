@@ -1,6 +1,6 @@
-CURRENT HEALTH DESIGN SCREENSHOTS — build 1.0.14 (7)
+CURRENT HEALTH DESIGN SCREENSHOTS — build 1.0.14 (9)
 
-Use the new Health-Refresh folder and its UPLOAD.txt. It contains matching six-image iPhone and iPad sets based on the latest health UI. Older screenshot sets below are retained as previous artwork and do not reflect the current feature set.
+Use the new Health-Refresh folder and its UPLOAD.txt. It contains matching seven-image iPhone and iPad sets based on the latest health UI. Older screenshot sets below are retained as previous artwork and do not reflect the current feature set.
 
 The current app icon uses black bars; this screenshot refresh does not change the icon.
 

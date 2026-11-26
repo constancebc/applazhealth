@@ -94,3 +94,8 @@ The template dropdown now follows the reference's flat rows, subtle separators, 
 Manifestation screens shown in the chat are concept mockups only. No manifestation tools or generated concept images are included in the app.
 
 The build and focused simulator UI check passed. Verification covered opening after keyboard entry, row spacing, selected-state indication, outside dismissal, privacy retention across template changes, and notebook creation. Fresh native previews are in DesignPreviews/dropdown-refinement.
+
+
+## Translucent large actions — build 1.0.14 (9)
+
+Create Notebook and the large authentication, subscription and meal-confirmation actions now use pale translucent surfaces, dark labels and a subtle outline in place of solid navy fills. Existing action handlers, purchase gating and disabled states remain in place. Navy remains the accent for small icons, selection and checklist state. The simulator build passed. Store artwork includes a seventh matching New Notebook screenshot for iPhone and iPad.

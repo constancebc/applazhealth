@@ -83,7 +83,7 @@ struct MealEntryView: View {
                     var entry = existing ?? MealEntry(date: day, meal: meal, description: description, items: items)
                     entry.meal = meal; entry.description = description; entry.items = items
                     WellnessStore.shared.saveMeal(entry); dismiss()
-                }.buttonStyle(.borderedProminent).tint(.applazAccent)
+                }.buttonStyle(ApplazBubbleButtonStyle())
             }
             Text("Only confirmed meals enter your daily tally. Photos are sent for this estimate and are not added to the public photo bucket.").font(.caption)
         }.padding(24) }}.foregroundColor(.black).navigationBarHidden(true) }.navigationViewStyle(.stack)
