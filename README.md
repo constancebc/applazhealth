@@ -1,6 +1,6 @@
 # Applaz — Goals Delivered
 
-Native iOS app, version 1.0.14 (7). Current health and fitness design snapshot for `constancebc/applazhealth`.
+Native iOS app, version 1.0.14 (8). Current health and fitness design snapshot for `constancebc/applazhealth`.
 
 ## Build locally
 

@@ -456,7 +456,7 @@ enum ApplazAuthLayout {
     }
 }
 
-final class NewNotebookViewController: UIViewController, UIPopoverPresentationControllerDelegate {
+final class NewNotebookViewController: UIViewController {
     var onCreate: ((String, Bool) -> Void)?
     var onFinish: (() -> Void)?
     var existingNotebooks: [Note] = []
@@ -464,6 +464,7 @@ final class NewNotebookViewController: UIViewController, UIPopoverPresentationCo
     var onSelectPrivateNotebook: ((String) -> Void)?
     private var selectedTemplate = WellnessTemplate.blank
     private let templateButton = UIButton(type: .system)
+    private var templateMenuOverlay: UIControl?
     private let templateDescription = UILabel()
     private let checklistControl = UISegmentedControl(items: ["Notes", "Checklist"])
     let nameField = UITextField()
@@ -548,13 +549,24 @@ final class NewNotebookViewController: UIViewController, UIPopoverPresentationCo
         let actions = UIStackView(arrangedSubviews: [createButton])
         templateButton.accessibilityIdentifier = "NotebookTemplate"
         templateButton.contentHorizontalAlignment = .leading
-        templateButton.titleLabel?.font = ApplazAppearance.font(16)
+        templateButton.titleLabel?.font = ApplazAppearance.font(17)
         templateButton.tintColor = ApplazAppearance.ink
         templateButton.backgroundColor = ApplazAppearance.surface
         templateButton.layer.cornerRadius = 12
         templateButton.layer.borderWidth = 1
         templateButton.layer.borderColor = ApplazAppearance.accent.withAlphaComponent(0.18).cgColor
-        templateButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+        templateButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 14, bottom: 0, right: 42)
+        let templateChevron = UIImageView(image: UIImage(systemName: "chevron.down", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .regular)))
+        templateChevron.tintColor = ApplazAppearance.accent
+        templateChevron.contentMode = .scaleAspectFit
+        templateChevron.translatesAutoresizingMaskIntoConstraints = false
+        templateButton.addSubview(templateChevron)
+        NSLayoutConstraint.activate([
+            templateChevron.trailingAnchor.constraint(equalTo: templateButton.trailingAnchor, constant: -14),
+            templateChevron.centerYAnchor.constraint(equalTo: templateButton.centerYAnchor),
+            templateChevron.widthAnchor.constraint(equalToConstant: 18),
+            templateChevron.heightAnchor.constraint(equalToConstant: 18)
+        ])
         templateButton.addTarget(self, action: #selector(showTemplateChoices), for: .touchUpInside)
         refreshTemplateMenu()
         checklistControl.selectedSegmentIndex = 0
@@ -640,55 +652,134 @@ final class NewNotebookViewController: UIViewController, UIPopoverPresentationCo
         }
     }
 
+    private func templateTitle(_ template: WellnessTemplate) -> String {
+        switch template {
+        case .blank: return "Blank notebook"
+        case .goals: return "Goals"
+        case .wellness: return "Routine checklist"
+        case .workout: return "Workout checklist"
+        case .food: return "Food diary"
+        case .training: return "Fitness training"
+        }
+    }
     private func refreshTemplateMenu() {
-        templateButton.setTitle(selectedTemplate.rawValue + "  ⌄", for: .normal)
+        templateButton.setTitle(templateTitle(selectedTemplate), for: .normal)
         templateButton.accessibilityHint = selectedTemplate.summary
     }
-    @objc private func showTemplateChoices() {
-        let choices = UIViewController()
-        choices.modalPresentationStyle = .popover
-        choices.view.backgroundColor = UIColor(red: 0.98, green: 0.97, blue: 1, alpha: 1)
-        let rows = UIStackView()
-        rows.axis = .vertical
-        rows.translatesAutoresizingMaskIntoConstraints = false
-        choices.view.addSubview(rows)
-        for template in WellnessTemplate.allCases {
-            let button = UIButton(type: .system)
-            var config = UIButton.Configuration.plain()
-            config.title = template.rawValue
-            config.baseForegroundColor = ApplazAppearance.ink
-            config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 14)
-            if template == selectedTemplate {
-                config.image = UIImage(systemName: "checkmark")
-                config.imagePlacement = .trailing
-                config.imagePadding = 12
-                button.backgroundColor = UIColor(red: 0.88, green: 0.85, blue: 0.95, alpha: 1)
-            }
-            button.configuration = config
-            button.contentHorizontalAlignment = .leading
-            button.accessibilityLabel = template.rawValue
-            button.heightAnchor.constraint(equalToConstant: 42).isActive = true
-            button.addAction(UIAction { [weak self, weak choices] _ in
-                choices?.dismiss(animated: true)
-                self?.selectTemplate(template)
-            }, for: .touchUpInside)
-            rows.addArrangedSubview(button)
-        }
-        NSLayoutConstraint.activate([rows.topAnchor.constraint(equalTo: choices.view.topAnchor), rows.bottomAnchor.constraint(equalTo: choices.view.bottomAnchor), rows.leadingAnchor.constraint(equalTo: choices.view.leadingAnchor), rows.trailingAnchor.constraint(equalTo: choices.view.trailingAnchor)])
-        choices.preferredContentSize = CGSize(width: 280, height: CGFloat(WellnessTemplate.allCases.count) * 42)
-        if let popover = choices.popoverPresentationController {
-            popover.sourceView = templateButton
-            popover.sourceRect = templateButton.bounds
-            popover.permittedArrowDirections = [.up, .down]
-            popover.delegate = self
-        }
-        present(choices, animated: true)
+    @objc private func hideTemplateChoices() {
+        templateMenuOverlay?.removeFromSuperview()
+        templateMenuOverlay = nil
     }
-    func adaptivePresentationStyle(for controller: UIPresentationController) -> UIModalPresentationStyle { .none }
+    @objc private func showTemplateChoices() {
+        if templateMenuOverlay != nil { hideTemplateChoices(); return }
+        guard let window = view.window else { return }
+        if nameField.isFirstResponder {
+            nameField.resignFirstResponder()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in self?.showTemplateChoices() }
+            return
+        }
+        view.layoutIfNeeded()
+        let anchor = templateButton.convert(templateButton.bounds, to: window)
+        let width = min(300, max(260, anchor.width), window.bounds.width - 32)
+        let rowHeight: CGFloat = 48
+        let height = rowHeight * CGFloat(WellnessTemplate.allCases.count)
+        let above = anchor.minY - height - 10 >= window.safeAreaInsets.top + 12
+        let x = min(max(16, anchor.maxX - width), window.bounds.width - width - 16)
+        let y = above ? anchor.minY - height - 10 : min(anchor.maxY + 10, window.bounds.height - window.safeAreaInsets.bottom - height - 12)
+        let overlay = UIControl(frame: window.bounds)
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        overlay.accessibilityIdentifier = "NotebookTemplateMenu"
+        overlay.accessibilityViewIsModal = true
+        overlay.addTarget(self, action: #selector(hideTemplateChoices), for: .touchUpInside)
+        let surface = UIColor(red: 0.99, green: 0.98, blue: 1, alpha: 1)
+        let outline = UIColor(red: 0.62, green: 0.58, blue: 0.80, alpha: 0.48)
+        let arrowX = min(max(anchor.midX, x + 22), x + width - 22)
+        let baseY = above ? y + height : y
+        let pointer = UIBezierPath()
+        pointer.move(to: CGPoint(x: arrowX - 9, y: baseY))
+        pointer.addLine(to: CGPoint(x: arrowX, y: baseY + (above ? 9 : -9)))
+        pointer.addLine(to: CGPoint(x: arrowX + 9, y: baseY))
+        pointer.close()
+        let arrow = CAShapeLayer()
+        arrow.path = pointer.cgPath
+        arrow.fillColor = surface.cgColor
+        arrow.strokeColor = outline.cgColor
+        arrow.lineWidth = 1
+        overlay.layer.addSublayer(arrow)
+        let shadow = UIView(frame: CGRect(x: x, y: y, width: width, height: height))
+        shadow.layer.shadowColor = ApplazAppearance.accent.cgColor
+        shadow.layer.shadowOpacity = 0.12
+        shadow.layer.shadowRadius = 14
+        shadow.layer.shadowOffset = CGSize(width: 0, height: 7)
+        shadow.layer.shadowPath = UIBezierPath(roundedRect: shadow.bounds, cornerRadius: 14).cgPath
+        overlay.addSubview(shadow)
+        let card = UIView(frame: shadow.bounds)
+        card.backgroundColor = surface
+        card.layer.cornerRadius = 14
+        card.layer.borderColor = outline.cgColor
+        card.layer.borderWidth = 1
+        card.clipsToBounds = true
+        shadow.addSubview(card)
+        var selectedButton: UIButton?
+        for (index, template) in WellnessTemplate.allCases.enumerated() {
+            let selected = template == selectedTemplate
+            let button = UIButton(type: .custom)
+            button.frame = CGRect(x: 0, y: CGFloat(index) * rowHeight, width: width, height: rowHeight)
+            button.backgroundColor = selected ? UIColor(red: 0.89, green: 0.86, blue: 0.95, alpha: 1) : .clear
+            button.accessibilityIdentifier = "NotebookTemplateChoice." + template.id
+            button.accessibilityLabel = templateTitle(template)
+            button.accessibilityHint = template.summary
+            button.isAccessibilityElement = true
+            button.isSelected = selected
+            if selected { button.accessibilityTraits.insert(.selected); selectedButton = button }
+            let label = UILabel(frame: CGRect(x: 18, y: 0, width: width - 66, height: rowHeight))
+            label.text = templateTitle(template)
+            label.textColor = ApplazAppearance.ink
+            label.font = ApplazAppearance.font(17, weight: selected ? .medium : .regular)
+            label.lineBreakMode = .byTruncatingTail
+            label.isAccessibilityElement = false
+            button.addSubview(label)
+            if selected {
+                let checkmark = UIImageView(image: UIImage(systemName: "checkmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)))
+                checkmark.frame = CGRect(x: width - 38, y: 14, width: 20, height: 20)
+                checkmark.contentMode = .scaleAspectFit
+                checkmark.tintColor = ApplazAppearance.accent
+                button.addSubview(checkmark)
+            }
+            if index < WellnessTemplate.allCases.count - 1 {
+                let divider = UIView(frame: CGRect(x: 0, y: rowHeight - 1, width: width, height: 1))
+                divider.backgroundColor = ApplazAppearance.accent.withAlphaComponent(0.08)
+                divider.isUserInteractionEnabled = false
+                button.addSubview(divider)
+            }
+            button.addAction(UIAction { [weak self] _ in
+                self?.hideTemplateChoices()
+                self?.selectTemplate(template)
+                UIAccessibility.post(notification: .layoutChanged, argument: self?.templateButton)
+            }, for: .touchUpInside)
+            card.addSubview(button)
+        }
+        templateMenuOverlay = overlay
+        window.addSubview(overlay)
+        UIAccessibility.post(notification: .screenChanged, argument: selectedButton)
+    }
+    override func viewWillDisappear(_ animated: Bool) {
+        hideTemplateChoices()
+        super.viewWillDisappear(animated)
+    }
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        hideTemplateChoices()
+        super.viewWillTransition(to: size, with: coordinator)
+    }
+    override func accessibilityPerformEscape() -> Bool {
+        guard templateMenuOverlay != nil else { return false }
+        hideTemplateChoices()
+        UIAccessibility.post(notification: .layoutChanged, argument: templateButton)
+        return true
+    }
     func selectTemplate(_ template: WellnessTemplate) {
         selectedTemplate = template
         checklistControl.isEnabled = template == .blank
-        templateButton.setTitle(template.rawValue + "  ⌄", for: .normal)
         templateDescription.text = template.summary
         templateDescription.accessibilityIdentifier = "TemplateDescription"
         checklistControl.selectedSegmentIndex = template == .blank ? 0 : 1

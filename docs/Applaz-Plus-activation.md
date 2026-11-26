@@ -85,3 +85,12 @@ Refreshed App Store artwork is in AppStoreAssets/Health-Refresh. It uses native 
 The new-notebook form uses labeled Name, Template, Layout and Visibility rows, one full-width Create action, and the existing-notebook dropdown. Template choices use a compact anchored list with a selected checkmark. Both creation entry points share the same UIKit form, so template and privacy behavior remain consistent. Descriptions are available as template accessibility hints rather than taking space above the fields.
 
 Checklist editors retain their notebook, editable title and Text/Checklist selector, with a contextual template badge. Inline AI charts are shorter on phones and source names can be expanded. These are presentation changes; existing notebook data, AI scope, purchase gating and server credit policy are preserved. Offline preview conversations are labeled sample data and do not demonstrate live OpenAI activation.
+
+
+## Template dropdown refinement — build 1.0.14 (8)
+
+The template dropdown now follows the reference's flat rows, subtle separators, lilac selection band and trailing checkmark. Rows are 48 points high with 17-point text and separate reserved space for the checkmark. The field's down-chevron is pinned to its trailing edge. Short display labels (Goals, Routine checklist, Workout checklist) do not rename stored notebook titles or change template identifiers. Public remains the default; explicit privacy choices and existing creation handlers are retained.
+
+Manifestation screens shown in the chat are concept mockups only. No manifestation tools or generated concept images are included in the app.
+
+The build and focused simulator UI check passed. Verification covered opening after keyboard entry, row spacing, selected-state indication, outside dismissal, privacy retention across template changes, and notebook creation. Fresh native previews are in DesignPreviews/dropdown-refinement.

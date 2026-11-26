@@ -1,0 +1,20 @@
+{
+  "version": "1.0.14",
+  "build": 8,
+  "simulator_build": "passed",
+  "targeted_ui_check": {
+    "tests": 1,
+    "failures": 0,
+    "covered": [
+      "opening dropdown after entering name",
+      "readable alias labels and minimum row height",
+      "non-overlapping rows",
+      "selected checkmark",
+      "outside-tap dismissal",
+      "privacy retained across template changes",
+      "successful notebook creation"
+    ]
+  },
+  "visual_review": "Native form and selected Goals dropdown reviewed against the supplied reference.",
+  "scope": "Template presentation only; notebook identifiers, existing titles, persistence handlers and Firebase configuration retained. Manifestation concepts are not implemented."
+}
