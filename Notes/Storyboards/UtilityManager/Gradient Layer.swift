@@ -456,15 +456,16 @@ enum ApplazAuthLayout {
     }
 }
 
-final class NewNotebookViewController: UIViewController {
+final class NewNotebookViewController: UIViewController, UIPopoverPresentationControllerDelegate {
     var onCreate: ((String, Bool) -> Void)?
+    var onFinish: (() -> Void)?
     var existingNotebooks: [Note] = []
     var onSelectExisting: ((Note) -> Void)?
     var onSelectPrivateNotebook: ((String) -> Void)?
     private var selectedTemplate = WellnessTemplate.blank
     private let templateButton = UIButton(type: .system)
     private let templateDescription = UILabel()
-    private let checklistControl = UISegmentedControl(items: ["Text", "Checklist"])
+    private let checklistControl = UISegmentedControl(items: ["Notes", "Checklist"])
     let nameField = UITextField()
     let visibilityControl = UISegmentedControl(items: ["Public", "Private"])
     private let visibilityDescription = UILabel()
@@ -478,7 +479,7 @@ final class NewNotebookViewController: UIViewController {
         scroll.keyboardDismissMode = .interactive
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 12
+        stack.spacing = 14
         scroll.translatesAutoresizingMaskIntoConstraints = false
         stack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scroll)
@@ -492,6 +493,7 @@ final class NewNotebookViewController: UIViewController {
         subtitle.font = ApplazAppearance.font(15)
         subtitle.textColor = ApplazAppearance.ink.withAlphaComponent(0.75)
         subtitle.numberOfLines = 0
+        subtitle.isHidden = true
         nameField.placeholder = "Notebook name"
         nameField.accessibilityIdentifier = "NewNotebookName"
         nameField.font = ApplazAppearance.font(17)
@@ -521,13 +523,14 @@ final class NewNotebookViewController: UIViewController {
         visibilityDescription.font = ApplazAppearance.font(14)
         visibilityDescription.textColor = ApplazAppearance.ink.withAlphaComponent(0.75)
         visibilityDescription.numberOfLines = 0
+        visibilityDescription.isHidden = true
         visibilityDescription.accessibilityIdentifier = "NotebookVisibilityExplanation"
         updateVisibilityDescription()
         createButton.setTitle("Create notebook", for: .normal)
         createButton.accessibilityIdentifier = "CreateNotebook"
         createButton.setTitleColor(.white, for: .normal)
         createButton.titleLabel?.font = ApplazAppearance.font(17, weight: .medium)
-        createButton.backgroundColor = ApplazAppearance.ink
+        createButton.backgroundColor = ApplazAppearance.accent
         createButton.layer.cornerRadius = 14
         createButton.addTarget(self, action: #selector(createNotebook), for: .touchUpInside)
         let cancel = UIButton(type: .system)
@@ -536,18 +539,48 @@ final class NewNotebookViewController: UIViewController {
         cancel.tintColor = ApplazAppearance.accent
         cancel.addTarget(self, action: #selector(cancelCreation), for: .touchUpInside)
         visibilityControl.accessibilityLabel = "Notebook visibility"
-        let actions = UIStackView(arrangedSubviews: [cancel, createButton])
-        actions.spacing = 12
-        cancel.widthAnchor.constraint(equalToConstant: 90).isActive = true
-        for element in [heading, subtitle, nameField, visibilityControl, visibilityDescription, actions] { stack.addArrangedSubview(element) }
-        templateButton.setTitle("Template · Blank notebook  ⌄", for: .normal)
-        templateButton.tintColor = .black
-        templateButton.showsMenuAsPrimaryAction = true
+        cancel.setTitle(nil, for: .normal)
+        cancel.setImage(UIImage(systemName: "xmark"), for: .normal)
+        cancel.accessibilityLabel = "Cancel"
+        cancel.widthAnchor.constraint(equalToConstant: 32).isActive = true
+        let header = UIStackView(arrangedSubviews: [heading, cancel])
+        header.alignment = .center
+        let actions = UIStackView(arrangedSubviews: [createButton])
+        templateButton.accessibilityIdentifier = "NotebookTemplate"
+        templateButton.contentHorizontalAlignment = .leading
+        templateButton.titleLabel?.font = ApplazAppearance.font(16)
+        templateButton.tintColor = ApplazAppearance.ink
+        templateButton.backgroundColor = ApplazAppearance.surface
+        templateButton.layer.cornerRadius = 12
+        templateButton.layer.borderWidth = 1
+        templateButton.layer.borderColor = ApplazAppearance.accent.withAlphaComponent(0.18).cgColor
+        templateButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+        templateButton.addTarget(self, action: #selector(showTemplateChoices), for: .touchUpInside)
         refreshTemplateMenu()
         checklistControl.selectedSegmentIndex = 0
+        checklistControl.accessibilityIdentifier = "NotebookLayout"
         checklistControl.addTarget(self, action: #selector(updateChecklistPrivacy), for: .valueChanged)
-        stack.insertArrangedSubview(templateButton, at: 3)
-        stack.insertArrangedSubview(checklistControl, at: 4)
+        for control in [checklistControl, visibilityControl] {
+            control.selectedSegmentTintColor = .white
+            control.backgroundColor = ApplazAppearance.accent.withAlphaComponent(0.06)
+            control.setTitleTextAttributes([.font: ApplazAppearance.font(15), .foregroundColor: ApplazAppearance.ink], for: .normal)
+        }
+        func row(_ title: String, _ control: UIView) -> UIStackView {
+            let label = UILabel()
+            label.text = title
+            label.font = ApplazAppearance.font(15)
+            label.textColor = ApplazAppearance.ink
+            label.widthAnchor.constraint(equalToConstant: 66).isActive = true
+            let row = UIStackView(arrangedSubviews: [label, control])
+            row.spacing = 10
+            row.alignment = .center
+            control.heightAnchor.constraint(equalToConstant: 42).isActive = true
+            return row
+        }
+        for element in [header, row("Name", nameField), row("Template", templateButton), row("Layout", checklistControl), row("Visibility", visibilityControl), actions] {
+            stack.addArrangedSubview(element)
+        }
+        stack.setCustomSpacing(20, after: header)
         if onSelectExisting != nil {
             let divider = UILabel()
             divider.text = "Or add a note to an existing notebook"
@@ -556,7 +589,7 @@ final class NewNotebookViewController: UIViewController {
             divider.numberOfLines = 0
             let existing = UIButton(type: .system)
             var config = UIButton.Configuration.bordered()
-            config.title = existingNotebooks.isEmpty && WellnessStore.shared.notebooks.isEmpty ? "No existing notebooks yet" : "Choose an existing notebook"
+            config.title = existingNotebooks.isEmpty && WellnessStore.shared.notebooks.isEmpty ? "No existing notebooks yet" : "Add to an existing notebook"
             config.image = UIImage(systemName: "chevron.down")
             config.imagePlacement = .trailing
             config.imagePadding = 12
@@ -580,10 +613,9 @@ final class NewNotebookViewController: UIViewController {
                 }
             }
             existing.menu = UIMenu(children: regularActions + privateActions)
-            stack.setCustomSpacing(24, after: actions)
-            stack.addArrangedSubview(divider)
+            stack.setCustomSpacing(8, after: actions)
             stack.addArrangedSubview(existing)
-            existing.heightAnchor.constraint(equalToConstant: 50).isActive = true
+            existing.heightAnchor.constraint(equalToConstant: 44).isActive = true
         }
         NSLayoutConstraint.activate([
             scroll.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
@@ -595,10 +627,8 @@ final class NewNotebookViewController: UIViewController {
             stack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -24),
             stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -20),
             stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -48),
-            nameField.heightAnchor.constraint(equalToConstant: 52),
-            visibilityControl.heightAnchor.constraint(equalToConstant: 44),
-            createButton.heightAnchor.constraint(equalToConstant: 50),
-            cancel.heightAnchor.constraint(equalToConstant: 44)
+            createButton.heightAnchor.constraint(equalToConstant: 46),
+            cancel.heightAnchor.constraint(equalToConstant: 32)
         ])
         updateCreateButton()
         if let sheet = sheetPresentationController {
@@ -611,16 +641,54 @@ final class NewNotebookViewController: UIViewController {
     }
 
     private func refreshTemplateMenu() {
-        templateButton.menu = UIMenu(children: WellnessTemplate.allCases.map { template in
-            UIAction(title: template.rawValue, image: UIImage(systemName: template.symbol), state: selectedTemplate == template ? .on : .off) { [weak self] _ in
-                self?.selectTemplate(template)
-            }
-        })
+        templateButton.setTitle(selectedTemplate.rawValue + "  ⌄", for: .normal)
+        templateButton.accessibilityHint = selectedTemplate.summary
     }
+    @objc private func showTemplateChoices() {
+        let choices = UIViewController()
+        choices.modalPresentationStyle = .popover
+        choices.view.backgroundColor = UIColor(red: 0.98, green: 0.97, blue: 1, alpha: 1)
+        let rows = UIStackView()
+        rows.axis = .vertical
+        rows.translatesAutoresizingMaskIntoConstraints = false
+        choices.view.addSubview(rows)
+        for template in WellnessTemplate.allCases {
+            let button = UIButton(type: .system)
+            var config = UIButton.Configuration.plain()
+            config.title = template.rawValue
+            config.baseForegroundColor = ApplazAppearance.ink
+            config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 14)
+            if template == selectedTemplate {
+                config.image = UIImage(systemName: "checkmark")
+                config.imagePlacement = .trailing
+                config.imagePadding = 12
+                button.backgroundColor = UIColor(red: 0.88, green: 0.85, blue: 0.95, alpha: 1)
+            }
+            button.configuration = config
+            button.contentHorizontalAlignment = .leading
+            button.accessibilityLabel = template.rawValue
+            button.heightAnchor.constraint(equalToConstant: 42).isActive = true
+            button.addAction(UIAction { [weak self, weak choices] _ in
+                choices?.dismiss(animated: true)
+                self?.selectTemplate(template)
+            }, for: .touchUpInside)
+            rows.addArrangedSubview(button)
+        }
+        NSLayoutConstraint.activate([rows.topAnchor.constraint(equalTo: choices.view.topAnchor), rows.bottomAnchor.constraint(equalTo: choices.view.bottomAnchor), rows.leadingAnchor.constraint(equalTo: choices.view.leadingAnchor), rows.trailingAnchor.constraint(equalTo: choices.view.trailingAnchor)])
+        choices.preferredContentSize = CGSize(width: 280, height: CGFloat(WellnessTemplate.allCases.count) * 42)
+        if let popover = choices.popoverPresentationController {
+            popover.sourceView = templateButton
+            popover.sourceRect = templateButton.bounds
+            popover.permittedArrowDirections = [.up, .down]
+            popover.delegate = self
+        }
+        present(choices, animated: true)
+    }
+    func adaptivePresentationStyle(for controller: UIPresentationController) -> UIModalPresentationStyle { .none }
     func selectTemplate(_ template: WellnessTemplate) {
         selectedTemplate = template
         checklistControl.isEnabled = template == .blank
-        templateButton.setTitle("Template · " + template.rawValue + "  ⌄", for: .normal)
+        templateButton.setTitle(template.rawValue + "  ⌄", for: .normal)
         templateDescription.text = template.summary
         templateDescription.accessibilityIdentifier = "TemplateDescription"
         checklistControl.selectedSegmentIndex = template == .blank ? 0 : 1
@@ -659,10 +727,10 @@ final class NewNotebookViewController: UIViewController {
                 WellnessStore.shared.update(notebook)
             }
         } else { onCreate?(name, isPrivate) }
-        dismiss(animated: true)
+        if let onFinish { onFinish() } else { dismiss(animated: true) }
     }
 
-    @objc private func cancelCreation() { dismiss(animated: true) }
+    @objc private func cancelCreation() { if let onFinish { onFinish() } else { dismiss(animated: true) } }
 }
 
 /// Enables edge back with hidden bars while protecting navigation roots.

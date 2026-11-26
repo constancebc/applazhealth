@@ -1,0 +1,19 @@
+{
+  "version": "1.0.14",
+  "build": 7,
+  "simulator_build": "passed",
+  "checks": {
+    "compact_creator_template_selection_and_privacy": "passed on selector recheck",
+    "shared_creator_cancel_create_and_dismiss": "passed",
+    "note_fields_and_inline_answer_chart_sources": "passed",
+    "short_note_insight_visible_with_composer": "passed"
+  },
+  "test_harness_correction": "Scoped duplicate Daily wellness label to the template popover; no app behavior changed for the correction.",
+  "fixtures": "isolated offline sample records; no live AI request or production account data",
+  "store_exports": {
+    "count": 18,
+    "mode": "RGB",
+    "alpha": false,
+    "affected_phone_and_tablet_note_capture": "refreshed"
+  }
+}

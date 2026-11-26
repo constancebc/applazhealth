@@ -79,3 +79,9 @@ The notebook overview now combines consistency, the recorded-values trend, Find 
 The final simulator build succeeded. Both targeted UI checks passed: the notebook overview composer fits above the bottom menu and remains usable with the keyboard; Monthly insights and saved-chart navigation retain their selected period and recorded-value disclosure. This design pass changes presentation, not Firebase configuration, billing limits or stored user data.
 
 Refreshed App Store artwork is in AppStoreAssets/Health-Refresh. It uses native iPhone and iPad layouts with fictional offline sample records. The backend activation requirements above still apply; screenshot creation does not activate purchases, OpenAI or cloud sync.
+
+## Reference layout corrections — build 1.0.14 (7)
+
+The new-notebook form uses labeled Name, Template, Layout and Visibility rows, one full-width Create action, and the existing-notebook dropdown. Template choices use a compact anchored list with a selected checkmark. Both creation entry points share the same UIKit form, so template and privacy behavior remain consistent. Descriptions are available as template accessibility hints rather than taking space above the fields.
+
+Checklist editors retain their notebook, editable title and Text/Checklist selector, with a contextual template badge. Inline AI charts are shorter on phones and source names can be expanded. These are presentation changes; existing notebook data, AI scope, purchase gating and server credit policy are preserved. Offline preview conversations are labeled sample data and do not demonstrate live OpenAI activation.

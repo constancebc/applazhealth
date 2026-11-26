@@ -1,6 +1,6 @@
 # Applaz — Goals Delivered
 
-Native iOS app, version 1.0.14 (6). Current health and fitness design snapshot for `constancebc/applazhealth`.
+Native iOS app, version 1.0.14 (7). Current health and fitness design snapshot for `constancebc/applazhealth`.
 
 ## Build locally
 
@@ -20,7 +20,7 @@ Generated dependencies, credentials, personal Xcode state and simulator data are
 
 Health templates cover goals, daily wellness, workouts, food diaries and fitness training alongside regular notebooks. The app includes recurring checklists, notes, reviewed meal estimates and daily tallies, notebook-scoped AI, saved chats, recorded-data charts, daily/weekly/monthly insights and social note actions. Creative-project templates are excluded.
 
-The final design uses compact original navigation bars, no separate Profile top bar, black primary text, navy accents and soft pastel surfaces. The original logo shape is retained, with black bars in the app icon. The notebook overview combines consistency, trend, Find my patterns and its inline composer. AI options retains chat history, new-chat and privacy actions.
+The template creator uses labeled rows and a compact anchored list; routine notes retain the Add Note form while workouts keep their dedicated layout. The final design uses compact original navigation bars, no separate Profile top bar, black primary text, navy accents and soft pastel surfaces. The original logo shape is retained, with black bars in the app icon. The notebook overview combines consistency, trend, Find my patterns and its inline composer. AI options retains chat history, new-chat and privacy actions.
 
 ## Validation and activation
 

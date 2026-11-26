@@ -376,12 +376,13 @@ struct NotebookTrendPlot: View {
 struct AIChartCard: View {
     var chart: AISavedChart
     var summary: String? = nil
+    var compact = false
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: compact ? 10 : 14) {
             HStack(alignment: .firstTextBaseline) { Text(chart.title).font(.system(size: 17, weight: .medium)); Spacer(); Text(chart.unit).font(.system(size: 12)).foregroundColor(.black.opacity(0.5)) }
             if let summary { Text(summary).font(.system(size: 15)).foregroundColor(.black.opacity(0.65)) }
             if chart.kind == "line", chart.points.count > 1 {
-                NotebookTrendPlot(points: chart.points, unit: chart.unit, height: 125)
+                NotebookTrendPlot(points: chart.points, unit: chart.unit, height: compact ? 82 : 125)
                 DisclosureGroup("Recorded values") { values }.font(.caption).tint(.applazAccent)
             } else { values }
             Text(chart.caption).font(.caption2).foregroundColor(.black.opacity(0.5))
@@ -441,10 +442,14 @@ struct InlineAIChat: View {
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(message.role == "user" ? Color.clear : Color.applazAccent.opacity(0.10)))
                         if message.role != "user" { Spacer(minLength: 16) }
                     }
-                    if let chart = message.chart { AIChartCard(chart: chart) }
+                    if let chart = message.chart { AIChartCard(chart: chart, compact: compact) }
                     if let links = message.sourceLinks, !links.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) { HStack { ForEach(links) { link in Button { source = link } label: { Label(link.title, systemImage: "doc.text").font(.caption).padding(8).background(Color.white.opacity(0.6)).cornerRadius(12) } } } }
-                    } else if !message.sources.isEmpty { Text("Sources: " + message.sources.joined(separator: " · ")).font(.caption).foregroundColor(.black.opacity(0.6)) }
+                        DisclosureGroup("Sources") {
+                            ScrollView(.horizontal, showsIndicators: false) { HStack { ForEach(links) { link in Button { source = link } label: { Label(link.title, systemImage: "doc.text").font(.caption).padding(8).background(Color.white.opacity(0.6)).cornerRadius(12) } } } }
+                        }.font(.caption).tint(.applazAccent)
+                    } else if !message.sources.isEmpty {
+                        DisclosureGroup("Sources") { Text(message.sources.joined(separator: " · ")).font(.caption).foregroundColor(.black.opacity(0.6)) }.font(.caption).tint(.applazAccent)
+                    }
                 }
             }
             if model.busy { HStack { Spacer(); AIThinkingOrb(); Spacer() } }

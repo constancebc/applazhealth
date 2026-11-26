@@ -120,33 +120,21 @@ struct WellnessLibraryView: View {
         .navigationViewStyle(.stack).confirmationDialog("Copy guest notebooks and meals from this device into your signed-in account?", isPresented: $importGuest, titleVisibility: .visible) { Button("Copy my guest work") { store.importGuestWork() } }.sheet(isPresented: $create) { CreateWellnessNotebookView().modifier(WellnessHalfSheet()) }.sheet(isPresented: $chat) { NavigationView { SavedAIChatsView() } }
     }
 }
-struct CreateWellnessNotebookView: View {
+struct CreateWellnessNotebookView: UIViewControllerRepresentable {
     @Environment(\.dismiss) private var dismiss
-    @State private var name = ""
-    @State private var template = WellnessTemplate.blank
-    @State private var checklist = false
-    @State private var isPrivate = false
-    var body: some View {
-        ZStack { WellnessBackground(); VStack(alignment: .leading, spacing: 18) {
-            HStack { Text("New notebook").font(.system(size: 17, weight: .medium)); Spacer(); Button("Done") { dismiss() } }
-            TextField("Notebook name", text: $name).padding(14).background(Color.white.opacity(0.7)).cornerRadius(12)
-            Picker("Template", selection: $template) { ForEach(WellnessTemplate.allCases) { Label($0.rawValue, systemImage: $0.symbol).tag($0) } }
-            Text(template.summary).font(.subheadline).foregroundColor(.black.opacity(0.6))
-            if template == .blank { Toggle("Checklist notes", isOn: $checklist) }
-            Picker("Visibility", selection: $isPrivate) { Text("Public").tag(false); Text("Private").tag(true) }.pickerStyle(.segmented)
-            Text(isPrivate ? "Only you can see this notebook." : "Public notes can appear in Newsfeed. Meal logs, dated reflections and chats stay private.").font(.caption)
-            Button("Create notebook") {
-                let id = WellnessStore.shared.create(template, name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : name)
-                if var n = WellnessStore.shared.notebooks.first(where: { $0.id == id }) {
-                    n.isPrivate = isPrivate
-                    if checklist && template == .blank { n.kind = "checklist"; n.notes = [WellnessTextNote(title: "My checklist", body: "", isChecklist: true)] }
-                    WellnessStore.shared.update(n)
-                }
-                dismiss()
-            }.buttonStyle(.borderedProminent).tint(.applazAccent)
-            Spacer(minLength: 0)
-        }.padding(24) }.foregroundColor(.black)
+    func makeUIViewController(context: Context) -> NewNotebookViewController {
+        let controller = NewNotebookViewController()
+        controller.onCreate = { name, isPrivate in
+            let id = WellnessStore.shared.create(.blank, name: name)
+            if var notebook = WellnessStore.shared.notebooks.first(where: { $0.id == id }) {
+                notebook.isPrivate = isPrivate
+                WellnessStore.shared.update(notebook)
+            }
+        }
+        controller.onFinish = { dismiss() }
+        return controller
     }
+    func updateUIViewController(_ controller: NewNotebookViewController, context: Context) {}
 }
 struct WellnessNotebookView: View {
     @Environment(\.dismiss) private var dismiss
@@ -227,12 +215,18 @@ struct WellnessNoteEditor: View {
     private var note: WellnessTextNote? { store.notebooks.first { $0.id == notebookID }?.notes.first { $0.id == noteID } }
     var body: some View {
         ZStack { WellnessBackground(); ScrollView { VStack(alignment: .leading, spacing: 16) {
-            if note?.isChecklist != true {
+            if note?.workoutDays == nil {
             if let notebook = store.notebooks.first(where: { $0.id == notebookID }) {
                 HStack { Text(notebook.name).font(.system(size: 16)); Spacer(); Image(systemName: "book.closed").font(.system(size: 18)).foregroundColor(.applazAccent) }.wellnessField()
             }
             TextField("Title", text: $title).font(.system(size: 17, weight: .medium)).wellnessField().onChange(of: title) { _ in save() }
-            Picker("Layout", selection: Binding(get: { note?.isChecklist == true }, set: { value in mutate { $0.isChecklist = value } })) { Text("Text").tag(false); Text("Checklist").tag(true) }.pickerStyle(.segmented).frame(maxWidth: 290, alignment: .leading)
+            HStack(spacing: 12) {
+                Picker("Layout", selection: Binding(get: { note?.isChecklist == true }, set: { value in mutate { $0.isChecklist = value } })) { Text("Text").tag(false); Text("Checklist").tag(true) }.pickerStyle(.segmented).frame(maxWidth: 220).accessibilityIdentifier("NoteLayout")
+                if note?.isChecklist == true, let recurrence = note?.recurrence {
+                    Spacer(minLength: 0)
+                    Text(note?.workoutDays != nil ? "Workout template" : recurrence == "once" ? "Goal template" : recurrence == "weekly" ? "Weekly template" : "Routine template").font(.system(size: 12)).lineLimit(1).padding(.horizontal, 10).padding(.vertical, 7).background(Color.white.opacity(0.6)).clipShape(Capsule()).overlay(Capsule().stroke(Color.applazAccent.opacity(0.15)))
+                }
+            }
             }
             if note?.workoutDays != nil { WorkoutWeekStrip(date: $date, scheduled: note?.workoutDays ?? []) }
             if note?.isChecklist != true && note?.recurrence == "weekly" { DatePicker("Week", selection: $date, displayedComponents: .date) }
@@ -286,7 +280,7 @@ struct WellnessNoteEditor: View {
             }
             InlineAIChat(scope: .healthNote(notebookID: notebookID, noteID: noteID, title: title, context: "\(title)\n\(note?.isChecklist == true ? text : note?.body ?? text)"), title: "Ask about this note", compact: true)
             Text("Saved automatically on this device").font(.caption).foregroundColor(.black.opacity(0.5))
-        }.padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 32) }}.foregroundColor(.black).tint(.applazAccent).navigationTitle(note?.isChecklist == true ? title : "Add Note").navigationBarTitleDisplayMode(.inline).navigationBarHidden(false)
+        }.padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 32) }}.foregroundColor(.black).tint(.applazAccent).navigationTitle(note?.workoutDays != nil ? title : "Add Note").navigationBarTitleDisplayMode(.inline).navigationBarHidden(false)
             .toolbar { ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
                     if note?.isChecklist == true { Button { editingDetails = true } label: { Image(systemName: "slider.horizontal.3") }.accessibilityLabel("Note options") }
