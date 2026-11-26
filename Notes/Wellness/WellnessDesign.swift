@@ -216,7 +216,7 @@ struct PhotoStoragePopup: View {
             Color.black.opacity(0.16).ignoresSafeArea()
                 .onTapGesture { presentation.wrappedValue.dismiss() }
             VStack(spacing: 20) {
-                Text("Your storage is full. Delete photos to upload more.")
+                Text("Your notes are still syncing. Your photo storage is full. Delete a few photos to make room for more.")
                     .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.black).multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)

@@ -265,7 +265,7 @@ enum WellnessTemplate: String, CaseIterable, Identifiable {
                 }
                 document = merged; persistLocal()
                 if response["photoStorageFull"] as? Bool == true {
-                    syncMessage = "Your storage is full. Delete photos to upload more."
+                    syncMessage = "Your notes are still syncing. Your photo storage is full. Delete a few photos to make room for more."
                     CloudSaveWarning.report(WellnessAPI.failure("Photo storage is full."), key: "photos:" + owner, savedLocally: localSaveSucceeded)
                 } else { CloudSaveWarning.recovered("photos:" + owner) }
             }
