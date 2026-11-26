@@ -1,0 +1,29 @@
+CURRENT HEALTH DESIGN SCREENSHOTS — build 1.0.14 (6)
+
+Use the new Health-Refresh folder and its UPLOAD.txt. It contains matching six-image iPhone and iPad sets based on the latest health UI. Older screenshot sets below are retained as previous artwork and do not reflect the current feature set.
+
+The current app icon uses black bars; this screenshot refresh does not change the icon.
+
+PREVIOUS ASSET NOTES (historical):
+UPLOAD SLOT GUIDE
+
+iPhone with Dynamic Island (medium display): use iphone-medium-1206x2622.
+iPhone with Dynamic Island (large display): use iphone-1320x2868.
+iPad 13-inch display: use ipad-2064x2752.
+The dimensions must match the selected App Store Connect tab.
+
+APP STORE ASSETS
+
+Upload individual PNG files from iphone-1320x2868 and ipad-2064x2752.
+Do not upload screenshot-overview.png; it is only a review sheet.
+All upload screenshots are opaque RGB PNGs at Apple-accepted portrait sizes.
+Official specifications: https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
+The screenshots use actual native app captures with fictional offline sample content.
+No AI, voice, or other unimplemented service is advertised.
+The app icon has been installed in Notes/Assets.xcassets/AppIcon.appiconset at every existing catalog size.
+1024px standalone icon: icon/Applaz-1024.png.
+
+ICON GENERATION
+Built-in image_gen tool. Reference: original app icon.
+Prompt: Preserve the recognizable three separate radiating brush-stroke mark silhouette and arrangement. Midnight navy mark on a luminous pale-blue, peach and lavender background matching the current app. Clean edges, full square opaque artwork, no text, border, outer rounded corners or extra symbols.
+Source originals are retained in source/.

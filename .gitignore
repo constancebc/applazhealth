@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+# Generated dependencies and local output
+Pods/
+node_modules/
+*.log
+
+# Local production configuration and credentials
+GoogleService-Info.plist
+.firebaserc
+.env
+.env.*
+.aws/
+.codex/
+.agents/
+*.p8
+*.p12
+*.mobileprovision
+*service-account*.json
+*serviceAccount*.json

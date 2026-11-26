@@ -1,0 +1,15 @@
+{
+  "originHash" : "6470d5e851771bf0cd76bab2e5226382300bf06549c61f14061fbaa047ef79d3",
+  "pins" : [
+    {
+      "identity" : "richeditorview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Andrew-Chen-Wang/RichEditorView.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "3a846e6addd784b777318b131eed5b923d98cf81"
+      }
+    }
+  ],
+  "version" : 3
+}

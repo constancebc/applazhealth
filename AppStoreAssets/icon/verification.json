@@ -1,0 +1,53 @@
+{
+  "all_images_match_navy_master": true,
+  "all_sizes_valid": true,
+  "all_source_images_opaque_rgb": true,
+  "apple_device_asset_compilation": "passed",
+  "catalog_entries": 25,
+  "compiled_iphone_icon_exact_pixel_match": true,
+  "debug_and_release_icon_name": "AppIcon",
+  "files": {
+    "100.png": "da2e655ef32ca8d0718f194c8c07a6ada489968b4fd12b68c22e6b44cb1fad8e",
+    "1024.png": "50967c61553c7e4ed33b2c02bb71a8b6181b6fb1d932a9e003a2bb30fa9af8a2",
+    "114.png": "5a1fec3e66d051bf9db49da8566f2604d00c42ebefbeb7912ce54c455a766f81",
+    "120.png": "a500a2ecac06e9214fe83f366b3fb71228dad35c8f43f6e4a7de05ec0e2655ff",
+    "144.png": "9f374631411f27c5e2e44c5c87992e51a65b8b95312fc41f025789e30dba0165",
+    "152.png": "fc701f8f49b0d19276bfe46e56031f4261dbff0dc28a1686c930e2cad9d3ae0e",
+    "167.png": "39da51c62772a88f1cd0f1b884ef6ee675e979d50cf0adb7f7e159220f330056",
+    "180.png": "072c97f01ef6b088aa35ac14fae66b052994c149ac1b1d3e2a18ee7e1ccce1a3",
+    "20.png": "40c5e6c12ccbc962be3d25d6b2411a47f8d080d0a188570a20c712afffd058c6",
+    "29.png": "bc4156c2f867df17e7a04ad78fd80d577215a14d6f7bcb5240195050dd4f8a66",
+    "40.png": "0d9a2a97d2923b4f8399443c2c43797708401795499a7bed5fedd08275745902",
+    "50.png": "0b9cbcc9ab2190ce13769d6d87b91340dba1a33120678f49d930059e98b03335",
+    "57.png": "46a32ae29e5e03ecab69ba5c7467f15091dbd43622e10663fe3dc6cc7c0c0e21",
+    "58.png": "d01cdb3d84c99d5d8bd8513dd969d4ec1e4467d497215027883c05aa0878f2da",
+    "60.png": "1fa3890c6b82c873726828880c6a94fb74773a0fbd21b4cd9a6809592e56565e",
+    "72.png": "e895fa56881b1d3a8fbeb0cd3953d1fd034dec118d01ed8bcf73433aeebef28a",
+    "76.png": "26e04d05350f8faded1cd81491b084fe2514dbde0094381cfcdbb827771e104e",
+    "80.png": "d0f7c567ede23e750b82c4494b935c75ca9385eeb18c872ff2a5a864ef0491c6",
+    "87.png": "6ddc1387950975dad23d96ff37aada87662ad2add88172c60d12947a59f12fd1"
+  },
+  "full_application_release_build": "not_completed_due_to_disk_space_limit",
+  "generated_icon_metadata": {
+    "CFBundleIcons": {
+      "CFBundlePrimaryIcon": {
+        "CFBundleIconFiles": [
+          "AppIcon60x60"
+        ],
+        "CFBundleIconName": "AppIcon"
+      }
+    },
+    "CFBundleIcons~ipad": {
+      "CFBundlePrimaryIcon": {
+        "CFBundleIconFiles": [
+          "AppIcon60x60",
+          "AppIcon76x76"
+        ],
+        "CFBundleIconName": "AppIcon"
+      }
+    }
+  },
+  "icon_catalog": "Notes/Assets.xcassets/AppIcon.appiconset",
+  "unique_pngs": 19,
+  "verified_on": "2026-11-24"
+}

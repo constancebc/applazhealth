@@ -1,0 +1,33 @@
+{
+  "version": "1.0.14",
+  "build": 6,
+  "simulator_build": "passed",
+  "design_ui_checks": {
+    "tests": 2,
+    "failures": 0,
+    "covered": [
+      "overview composer clears bottom menu",
+      "keyboard interaction",
+      "AI options actions",
+      "monthly selection survives saved-chart navigation",
+      "recorded values disclosure"
+    ]
+  },
+  "fixtures": "fictional offline records",
+  "live_backend": "requires deployment and activation; not validated by simulator design checks",
+  "ipad_clean_capture_check": {
+    "tests": 1,
+    "failures": 0,
+    "native_screens": 6
+  },
+  "store_exports": {
+    "count": 18,
+    "formats": [
+      "1320x2868",
+      "1206x2622",
+      "2064x2752"
+    ],
+    "mode": "RGB",
+    "alpha": false
+  }
+}

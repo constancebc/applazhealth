@@ -1,0 +1,7 @@
+{
+  "checkedAtUTC": "2026-11-26T04:03:22.403008+00:00",
+  "endpoint": "https://us-central1-applaz-32772.cloudfunctions.net/wellnessStatus",
+  "method": "POST",
+  "httpStatus": 404,
+  "scope": "Public readiness endpoint only; no authenticated user data accessed."
+}

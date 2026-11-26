@@ -1,0 +1,200 @@
+[
+  {
+    "file": "iphone-1320x2868/01-notebooks.png",
+    "pixels": [
+      1320,
+      2868
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "design-home"
+  },
+  {
+    "file": "iphone-1320x2868/02-checklist.png",
+    "pixels": [
+      1320,
+      2868
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "navigated-note"
+  },
+  {
+    "file": "iphone-1320x2868/03-workout.png",
+    "pixels": [
+      1320,
+      2868
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "navigated-workout"
+  },
+  {
+    "file": "iphone-1320x2868/04-insights.png",
+    "pixels": [
+      1320,
+      2868
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "navigated-charts"
+  },
+  {
+    "file": "iphone-1320x2868/05-food-diary.png",
+    "pixels": [
+      1320,
+      2868
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "navigated-food"
+  },
+  {
+    "file": "iphone-1320x2868/06-newsfeed.png",
+    "pixels": [
+      1320,
+      2868
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "newsfeed"
+  },
+  {
+    "file": "iphone-medium-1206x2622/01-notebooks.png",
+    "pixels": [
+      1206,
+      2622
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "design-home"
+  },
+  {
+    "file": "iphone-medium-1206x2622/02-checklist.png",
+    "pixels": [
+      1206,
+      2622
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "navigated-note"
+  },
+  {
+    "file": "iphone-medium-1206x2622/03-workout.png",
+    "pixels": [
+      1206,
+      2622
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "navigated-workout"
+  },
+  {
+    "file": "iphone-medium-1206x2622/04-insights.png",
+    "pixels": [
+      1206,
+      2622
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "navigated-charts"
+  },
+  {
+    "file": "iphone-medium-1206x2622/05-food-diary.png",
+    "pixels": [
+      1206,
+      2622
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "navigated-food"
+  },
+  {
+    "file": "iphone-medium-1206x2622/06-newsfeed.png",
+    "pixels": [
+      1206,
+      2622
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPhone 18 Pro",
+    "route": "newsfeed"
+  },
+  {
+    "file": "ipad-2064x2752/01-notebooks.png",
+    "pixels": [
+      2064,
+      2752
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPad Pro 13-inch M5",
+    "route": "design-home"
+  },
+  {
+    "file": "ipad-2064x2752/02-checklist.png",
+    "pixels": [
+      2064,
+      2752
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPad Pro 13-inch M5",
+    "route": "navigated-note"
+  },
+  {
+    "file": "ipad-2064x2752/03-workout.png",
+    "pixels": [
+      2064,
+      2752
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPad Pro 13-inch M5",
+    "route": "navigated-workout"
+  },
+  {
+    "file": "ipad-2064x2752/04-insights.png",
+    "pixels": [
+      2064,
+      2752
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPad Pro 13-inch M5",
+    "route": "navigated-charts"
+  },
+  {
+    "file": "ipad-2064x2752/05-food-diary.png",
+    "pixels": [
+      2064,
+      2752
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPad Pro 13-inch M5",
+    "route": "navigated-food"
+  },
+  {
+    "file": "ipad-2064x2752/06-newsfeed.png",
+    "pixels": [
+      2064,
+      2752
+    ],
+    "mode": "RGB",
+    "alpha": false,
+    "native_device": "iPad Pro 13-inch M5",
+    "route": "newsfeed"
+  }
+]

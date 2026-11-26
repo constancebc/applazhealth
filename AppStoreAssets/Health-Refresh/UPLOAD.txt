@@ -1,0 +1,18 @@
+APPLAZ — GOALS DELIVERED
+Final health design · build 1.0.14 (6)
+
+Use individual PNGs from the matching folder:
+- iphone-1320x2868: iPhone with Dynamic Island (large display).
+- iphone-medium-1206x2622: iPhone with Dynamic Island (medium display).
+- ipad-2064x2752: iPad 13-inch display.
+Each set contains the same six features. Overview contact sheets are for review only.
+Official accepted dimensions and no-alpha rule:
+https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
+
+All upload images are opaque RGB PNGs. iPad captures use the native iPad layout; they are not enlarged phone screens. Captures use fictional local sample records while Firebase is offline. No real user information or production credentials are included.
+
+The app's AI, private cloud sync, health publishing and subscription features still require the deployment and activation documented in docs/Applaz-Plus-activation.md. Prepare these listing assets now; complete live feature validation before submitting a release that advertises them.
+
+The app icon is unchanged by this screenshot refresh. Its current black brand bars remain in the app asset catalog.
+
+Re-rendering: install Pillow, then run render.py with the native-captures directory as its argument. The source native captures and validation.json are retained here. Do not upload native-captures or overview sheets as the marketing screenshot set.
