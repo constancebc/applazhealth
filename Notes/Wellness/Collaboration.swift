@@ -24,9 +24,9 @@ struct CollaborativeNotebook: Decodable, Identifiable {
     private var auth: AuthStateDidChangeListenerHandle?
     private var timer: Timer?
     private var refreshing = false
-    private var dismissedInvitations: Set<String> = []
+    private var dismissedInvitations: [String: Double] = [:]
     init() {
-        auth = Auth.auth().addStateDidChangeListener { [weak self] _, _ in Task { @MainActor in self?.notebooks = []; self?.dismissedInvitations = []; await self?.refresh() } }
+        auth = Auth.auth().addStateDidChangeListener { [weak self] _, _ in Task { @MainActor in self?.notebooks = []; self?.dismissedInvitations = [:]; await self?.refresh() } }
         timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in Task { @MainActor in
             guard UIApplication.shared.applicationState == .active else { return }; await self?.refresh()
         } }
@@ -42,7 +42,7 @@ struct CollaborativeNotebook: Decodable, Identifiable {
                 let events = (response["alerts"] as? [[String: Any]] ?? []).compactMap { value -> NotificationList? in
                     guard let type = value["type"] as? String, let actor = value["actorID"] as? String, let notebookID = value["notebookID"] as? String else { return nil }
                     guard type == "notebookInvite" || type == "notebookAccepted" else { return nil }
-                    if type == "notebookInvite", let id = value["invitationID"] as? String, dismissedInvitations.contains(id) { return nil }
+                    if type == "notebookInvite", let id = value["invitationID"] as? String, let dismissedAt = dismissedInvitations[id], (value["timestamp"] as? Double ?? 0) <= dismissedAt { return nil }
                     var event = NotificationList(photo: value["photo"] as? String, userID: actor, userName: value["userName"] as? String ?? "Someone", noteKey: "", noteTitle: value["notebookName"] as? String ?? "Notebook", notificationType: type == "notebookInvite" ? .notebookInvite : .notebookAccepted, timestamp: value["timestamp"] as? Double ?? 0)
                     event.recipientID = uid; event.eventID = value["eventID"] as? String ?? ""; event.collaborationNotebookID = notebookID; event.collaborationInvitationID = value["invitationID"] as? String
                     return event
@@ -66,14 +66,14 @@ struct CollaborativeNotebook: Decodable, Identifiable {
     }
     func respond(_ id: String, accept: Bool) async throws -> String? {
         let result = try await WellnessAPI.call("collaborationRespond", ["invitationID": id, "accept": accept])
-        dismissedInvitations.insert(id)
+        dismissedInvitations[id] = ApplazActivityInbox.shared.notifications.first { $0.collaborationInvitationID == id }?.timestamp ?? 0
         ApplazActivityInbox.shared.removeCollaborationEvent(id)
         await refresh(); return accept ? result["notebookID"] as? String : nil
     }
 }
 @MainActor enum CollaborationPresentation {
     static func open(_ id: String, from controller: UIViewController) {
-        let host = WellnessHostingController(rootView: NavigationView { CollaborativeNotebookView(notebookID: id) }.navigationViewStyle(.stack))
+        let host = WellnessHostingController(rootView: NavigationView { CollaborativeNotebookView(notebookID: id, close: { [weak controller] in controller?.navigationController?.popViewController(animated: true) }) }.navigationViewStyle(.stack).modifier(WellnessMenuModifier(controller: controller, enabled: controller.tabBarController == nil)))
         controller.navigationController?.pushViewController(host, animated: true)
     }
     static func choose(from controller: UIViewController, selected: [CollaborationPerson] = [], completion: @escaping ([CollaborationPerson]) -> Void) {
@@ -153,6 +153,7 @@ struct CollaborationPeoplePicker: View {
 }
 struct CollaborativeNotebookView: View {
     var notebookID: String
+    var close: (() -> Void)? = nil
     @ObservedObject private var collaboration = CollaborationStore.shared
     @State private var notebook: WellnessNotebook?
     @State private var role = "editor"
@@ -180,11 +181,12 @@ struct CollaborativeNotebookView: View {
         }.padding(20) }}.foregroundColor(.black).tint(.applazAccent)
             .navigationTitle(notebook?.name ?? "").navigationBarTitleDisplayMode(.inline).navigationBarHidden(false)
             .toolbar {
+                if let close { ToolbarItem(placement: .navigationBarLeading) { Button(action: close) { Image(systemName: "chevron.left") }.accessibilityLabel("Back") } }
                 ToolbarItem(placement: .navigationBarTrailing) { Button { inviting = true } label: { Image(systemName: "person.badge.plus") }.accessibilityLabel("Invite friends") }
                 if role == "owner" { ToolbarItem(placement: .navigationBarTrailing) { Menu { Button("Delete notebook", role: .destructive) { deleting = true } } label: { Image(systemName: "ellipsis") } } }
             }
             .sheet(isPresented: $inviting) { CollaborationPeoplePicker(done: { people in inviting = false; Task { do { _ = try await collaboration.invite(kind: "health", sourceID: "", people: people, notebookID: notebookID) } catch { self.error = error.localizedDescription } } }, cancel: { inviting = false }) }
-            .alert("Delete notebook?", isPresented: $deleting) { Button("Delete", role: .destructive) { Task { do { _ = try await WellnessAPI.call("collaborationDelete", ["notebookID": notebookID]); await collaboration.refresh(); await WellnessStore.shared.sync(); dismiss() } catch { self.error = error.localizedDescription } } }; Button("Cancel", role: .cancel) {} }
+            .alert("Delete notebook?", isPresented: $deleting) { Button("Delete", role: .destructive) { Task { do { _ = try await WellnessAPI.call("collaborationDelete", ["notebookID": notebookID]); await collaboration.refresh(); await WellnessStore.shared.sync(); if let close { close() } else { dismiss() } } catch { self.error = error.localizedDescription } } }; Button("Cancel", role: .cancel) {} }
             .task {
                 repeat { await load(); do { try await Task.sleep(nanoseconds: 5_000_000_000) } catch { return } } while !Task.isCancelled
             }
