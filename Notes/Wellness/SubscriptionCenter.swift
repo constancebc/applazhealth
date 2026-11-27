@@ -8,8 +8,10 @@ import Security
     static let shared = SubscriptionCenter()
     static let productID = "299"
     @Published var serviceReady = false
+    @Published private(set) var loadingProduct = false
     @Published var product: Product?
     @Published var eligibleTrial = false
+    @Published private(set) var trialUnavailableReason: String?
     @Published var hasAppleSubscription = false
     @Published var credits = 0
     @Published var capacity = 0
@@ -24,7 +26,7 @@ import Security
     private var signedTransaction: String?
     init() {
         foreground = NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification).sink { [weak self] _ in
-            Task { @MainActor in await self?.refresh() }
+            Task { @MainActor in await self?.loadProduct(); await self?.refresh() }
         }
         updates = Task { [weak self] in
             for await result in StoreKit.Transaction.updates {
@@ -43,33 +45,55 @@ import Security
         Task { await loadProduct(); await refresh() }
     }
     func loadProduct() async {
+        guard !loadingProduct else { return }
+        loadingProduct = true
+        defer { loadingProduct = false }
+        message = nil
+        serviceReady = (try? await WellnessAPI.call("wellnessStatus", [:])["ready"] as? Bool) == true
         do {
-            serviceReady = (try? await WellnessAPI.call("wellnessStatus", [:])["ready"] as? Bool) == true
             product = try await Product.products(for: [Self.productID]).first
-            if let loaded = product {
-                guard loaded.subscription?.subscriptionPeriod.unit == .week,
-                      loaded.subscription?.subscriptionPeriod.value == 1 else {
-                    product = nil; eligibleTrial = false; message = "Applaz Plus isn’t available in your region yet."; return
-                }
+            guard let loaded = product else {
+                eligibleTrial = false
+                message = "Apple couldn’t load this subscription. Tap Continue to try again."
+                return
             }
-            if let subscription = product?.subscription, let offer = subscription.introductoryOffer {
+            let period = loaded.subscription?.subscriptionPeriod
+            guard (period?.unit == .week && period?.value == 1) || (period?.unit == .day && period?.value == 7) else {
+                product = nil; eligibleTrial = false
+                message = "Apple returned a different subscription plan. Please try again later."
+                return
+            }
+            if let subscription = loaded.subscription, let offer = subscription.introductoryOffer {
                 let oneWeek = (offer.period.unit == .week && offer.period.value == 1) || (offer.period.unit == .day && offer.period.value == 7)
                 let eligible = await subscription.isEligibleForIntroOffer
                 eligibleTrial = offer.paymentMode == .freeTrial && oneWeek && eligible
-            } else { eligibleTrial = false }
-        } catch { message = "Subscriptions couldn’t be loaded. You can continue without subscribing." }
+                trialUnavailableReason = eligibleTrial ? nil : (offer.paymentMode == .freeTrial && oneWeek ? "A free trial isn’t available for this Apple Account." : "Apple isn’t currently offering a one-week free trial for this plan.")
+            } else {
+                eligibleTrial = false
+                trialUnavailableReason = "Apple isn’t currently offering a free trial for this plan."
+            }
+            if !serviceReady { message = "We couldn’t connect to your membership. Tap Continue to try again." }
+        } catch {
+            message = "Apple couldn’t load this subscription. Check your connection and tap Continue to try again."
+        }
     }
     var price: String { product?.displayPrice ?? "$2.99" }
     func purchase() async -> Bool {
-        guard serviceReady, let product, !busy else { message = "This subscription is not available yet."; return false }
-        busy = true; defer { busy = false }
+        guard !busy, !loadingProduct else { return false }
+        busy = true; message = nil
+        defer { busy = false }
+        if product == nil || !serviceReady { await loadProduct() }
+        guard serviceReady, let product else {
+            if message == nil { message = "We couldn’t connect to Apple. Please try again." }
+            return false
+        }
         do {
             switch try await product.purchase() {
             case .success(let result):
                 guard case .verified(let transaction) = result else { throw WellnessAPI.failure("Apple couldn’t verify this purchase.") }
                 await accept(transaction, signed: result.jwsRepresentation)
                 await transaction.finish()
-                return true
+                return Auth.auth().currentUser == nil || capacity > 0
             case .pending: message = "Your purchase is pending approval. Credits unlock after it is verified."; return false
             case .userCancelled: return false
             @unknown default: return false

@@ -472,6 +472,9 @@ final class NewNotebookViewController: UIViewController {
     let visibilityControl = UISegmentedControl(items: ["Public", "Private"])
     private let visibilityDescription = UILabel()
     private let createButton = UIButton(type: .system)
+    private let inviteFriendsButton = UIButton(type: .system)
+    private var selectedCollaborators: [CollaborationPerson] = []
+    private var createdCollaborativeNotebookID: String?
 
     override func loadView() { view = ApplazSurfaceView(frame: .zero) }
 
@@ -593,7 +596,13 @@ final class NewNotebookViewController: UIViewController {
             control.heightAnchor.constraint(equalToConstant: 42).isActive = true
             return row
         }
-        for element in [header, row("Name", nameField), row("Template", templateButton), row("Layout", checklistControl), row("Visibility", visibilityControl), actions] {
+        inviteFriendsButton.setTitle("Invite friends", for: .normal)
+        inviteFriendsButton.setImage(UIImage(systemName: "person.badge.plus"), for: .normal)
+        inviteFriendsButton.tintColor = ApplazAppearance.accent
+        inviteFriendsButton.titleLabel?.font = ApplazAppearance.font(15)
+        inviteFriendsButton.accessibilityIdentifier = "NewNotebookFriends"
+        inviteFriendsButton.addTarget(self, action: #selector(chooseCollaborators), for: .touchUpInside)
+        for element in [header, row("Name", nameField), row("Template", templateButton), row("Layout", checklistControl), row("Visibility", visibilityControl), row("Friends", inviteFriendsButton), actions] {
             stack.addArrangedSubview(element)
         }
         stack.setCustomSpacing(20, after: header)
@@ -807,10 +816,36 @@ final class NewNotebookViewController: UIViewController {
         createButton.alpha = createButton.isEnabled ? 1 : 0.5
     }
 
+    @objc private func chooseCollaborators() {
+        CollaborationPresentation.choose(from: self, selected: selectedCollaborators) { [weak self] people in
+            self?.selectedCollaborators = people
+            self?.inviteFriendsButton.setTitle(people.isEmpty ? "Invite friends" : people.map { "@" + $0.name }.joined(separator: ", "), for: .normal)
+        }
+    }
     @objc private func createNotebook() {
         let name = (nameField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         let isPrivate = visibilityControl.selectedSegmentIndex == 1
+        if !selectedCollaborators.isEmpty {
+            createButton.isEnabled = false
+            let id = createdCollaborativeNotebookID ?? WellnessStore.shared.create(selectedTemplate, name: name)
+            createdCollaborativeNotebookID = id
+            if var notebook = WellnessStore.shared.notebooks.first(where: { $0.id == id }) {
+                notebook.isPrivate = isPrivate
+                if selectedTemplate == .blank && checklistControl.selectedSegmentIndex == 1 { notebook.kind = "checklist"; notebook.notes = [WellnessTextNote(title: "My checklist", body: "", isChecklist: true)] }
+                WellnessStore.shared.update(notebook)
+            }
+            Task { do {
+                _ = try await CollaborationStore.shared.invite(kind: "health", sourceID: id, people: selectedCollaborators)
+                await WellnessStore.shared.sync()
+                if let onFinish { onFinish() } else { dismiss(animated: true) }
+            } catch {
+                createButton.isEnabled = true
+                let alert = UIAlertController(title: "Couldn’t send invitations", message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default)); present(alert, animated: true)
+            } }
+            return
+        }
         if selectedTemplate != .blank || checklistControl.selectedSegmentIndex == 1 {
             let id = WellnessStore.shared.create(selectedTemplate, name: name)
             if var notebook = WellnessStore.shared.notebooks.first(where: { $0.id == id }) {

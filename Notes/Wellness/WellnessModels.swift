@@ -154,13 +154,28 @@ enum WellnessTemplate: String, CaseIterable, Identifiable {
             document.notebooks = [WellnessNotebook(id: "start-here-v1", name: "Start Here", kind: "text", items: [], notes: [
                 WellnessTextNote(id: "welcome", title: "Welcome to Applaz", body: "This private notebook is yours. Your existing notebooks and notes stay as they are. Use the bottom Home button to explore the Newsfeed and the center plus to open Notebooks."),
                 WellnessTextNote(id: "write", title: "Write your first note", body: "Tap + to create a notebook or add to an existing one. Choose Text for ordinary writing, or Checklist for habits. The save icon keeps your note. Checklists remember each day separately; training goals remember each week."),
-                WellnessTextNote(id: "privacy", title: "Privacy, meals & AI", body: "Start Here is private. You can choose Public or Private for other notebooks. Public notes can appear in Newsfeed; meal logs, dated health reflections and AI conversations stay private. Type a meal or choose a photo to request a calorie estimate, then correct portions before confirming the daily tally. AI needs a verified subscription and your consent before selected content is sent for analysis."),
-                WellnessTextNote(id: "guest", title: "Keep your work safe", body: "Sign in to save across devices. Guest work stays on this device and does not automatically move into another account. AI credits begin only after Apple confirms a subscription and the backend verifies it. Manage or restore purchases in Settings.")
+                WellnessTextNote(id: "privacy", title: "How Applaz works", body: "Start Here is private. You can choose Public or Private for other notebooks. Public notes can appear in Newsfeed; meal logs, dated health reflections and AI conversations stay private. Type a meal or choose a photo to request a calorie estimate, then correct portions before confirming the daily tally. AI needs a verified subscription and your consent before selected content is sent for analysis."),
             ])]
             document.notebooks[0].updatedAt = Date(timeIntervalSince1970: 0)
             persistLocal()
         }
+        refreshStarterGuides()
         Task { await sync() }
+    }
+    private func refreshStarterGuides() {
+        guard let index = document.notebooks.firstIndex(where: { $0.id == "start-here-v1" && !$0.isDeleted }) else { return }
+        var notebook = document.notebooks[index]
+        var changed = false
+        for i in notebook.notes.indices where notebook.notes[i].id == "privacy" && notebook.notes[i].title == "Privacy, meals & AI" {
+            notebook.notes[i].title = "How Applaz works"; changed = true
+        }
+        let count = notebook.notes.count
+        notebook.notes.removeAll { $0.id == "guest" && $0.title == "Keep your work safe" && $0.body == "Sign in to save across devices. Guest work stays on this device and does not automatically move into another account. AI credits begin only after Apple confirms a subscription and the backend verifies it. Manage or restore purchases in Settings." }
+        changed = changed || count != notebook.notes.count
+        if changed {
+            notebook.updatedAt = Date(); document.notebooks[index] = notebook
+            saveGeneration = UUID(); persistLocal()
+        }
     }
     var hasGuestWork: Bool {
         guard account != "guest", let guest = guestDocument else { return false }
@@ -263,7 +278,7 @@ enum WellnessTemplate: String, CaseIterable, Identifiable {
                     if let i = merged.meals.firstIndex(where: { $0.id == m.id }) { if m.updatedAt > merged.meals[i].updatedAt { merged.meals[i] = m } }
                     else { merged.meals.append(m) }
                 }
-                document = merged; persistLocal()
+                document = merged; refreshStarterGuides(); persistLocal()
                 if response["photoStorageFull"] as? Bool == true {
                     syncMessage = "Your notes are still syncing. Your photo storage is full. Delete a few photos to make room for more."
                     CloudSaveWarning.report(WellnessAPI.failure("Photo storage is full."), key: "photos:" + owner, savedLocally: localSaveSucceeded)

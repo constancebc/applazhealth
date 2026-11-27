@@ -33,11 +33,15 @@ struct NotificationList {
     var noteToken: String?
     var recipientID: String = ""
     var eventID: String = ""
+    var collaborationNotebookID: String?
+    var collaborationInvitationID: String?
 }
 
 enum NotificationType {
     case like
     case comment
+    case notebookInvite
+    case notebookAccepted
 }
 
 import UIKit
@@ -57,14 +61,29 @@ final class ApplazActivityInbox {
     private var names: [String: (String, String?)] = [:]
     private var generation = UUID()
     private var seenAt: Double = 0
+    private var collaborationEvents: [NotificationList] = []
+    func removeCollaborationEvent(_ id: String) {
+        collaborationEvents.removeAll { $0.collaborationInvitationID == id }
+        notifications.removeAll { $0.collaborationInvitationID == id }
+        unread = notifications.filter { $0.timestamp > seenAt }.count
+        publish()
+    }
+    func setCollaborationEvents(_ events: [NotificationList]) {
+        let user = Auth.auth().currentUser?.uid
+        collaborationEvents = events.filter { $0.recipientID == user }
+        notifications.removeAll { $0.notificationType == .notebookInvite || $0.notificationType == .notebookAccepted }
+        notifications = (notifications + collaborationEvents).sorted { $0.timestamp > $1.timestamp }
+        unread = notifications.filter { $0.timestamp > seenAt }.count
+        publish()
+    }
     init() {
         authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in self?.bind(user?.uid) }
     }
-    func start() { bind(Auth.auth().currentUser?.uid) }
+    func start() { bind(Auth.auth().currentUser?.uid); Task { @MainActor in await CollaborationStore.shared.refresh() } }
     private func bind(_ userID: String?) {
         guard uid != userID || reference == nil else { return }
         if let handle { reference?.removeObserver(withHandle: handle) }
-        uid = userID; generation = UUID(); names = [:]; notifications = []; unread = 0; reference = nil; handle = nil
+        uid = userID; generation = UUID(); names = [:]; notifications = []; collaborationEvents = []; unread = 0; reference = nil; handle = nil
         publish()
         guard let userID else { return }
         let ref = Database.database().reference().child("Users").child(userID)
@@ -97,8 +116,8 @@ final class ApplazActivityInbox {
                     }
                 }
             }
-            self.notifications = events.sorted { $0.timestamp > $1.timestamp }
-            self.unread = events.filter { $0.timestamp > self.seenAt }.count
+            self.notifications = (events + self.collaborationEvents).sorted { $0.timestamp > $1.timestamp }
+            self.unread = self.notifications.filter { $0.timestamp > self.seenAt }.count
             self.publish()
             for actor in Set(events.filter { $0.notificationType == .like }.map(\.userID)) where self.names[actor] == nil {
                 self.names[actor] = ("Someone", nil)

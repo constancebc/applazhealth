@@ -457,9 +457,8 @@ struct InlineAIChat: View {
                     }
                 }
             }
-            if model.busy { HStack { Spacer(); AIThinkingOrb(); Spacer() } }
             if let error = model.error { Text(error).font(.footnote) }
-            HStack { TextField(model.thread.messages.isEmpty ? (scope.includeAll ? "Ask all my notebooks…" : scope.noteID != nil || !scope.fixedContext.isEmpty ? "Ask about this note…" : "Ask this notebook…") : "Ask a follow-up…", text: $question).accessibilityIdentifier("AIQuestion"); Button { send() } label: { Image(systemName: "arrow.up.circle").font(.system(size: 25)).foregroundColor(.applazAccent) }.accessibilityLabel("Send question").disabled(model.busy || question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }.padding(12).background(Color.white.opacity(0.75)).clipShape(Capsule()).overlay(Capsule().stroke(Color.applazAccent.opacity(0.15)))
+            HStack { TextField(model.thread.messages.isEmpty ? (scope.includeAll ? "Ask all my notebooks…" : scope.noteID != nil || !scope.fixedContext.isEmpty ? "Ask about this note…" : "Ask this notebook…") : "Ask a follow-up…", text: $question).accessibilityIdentifier("AIQuestion"); if model.busy { AIThinkingOrb(size: 44) } else { Button { send() } label: { Image(systemName: "arrow.up.circle").font(.system(size: 25)).foregroundColor(.applazAccent) }.accessibilityLabel("Send question").disabled(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) } }.padding(12).background(Color.white.opacity(0.75)).clipShape(Capsule()).overlay(Capsule().stroke(Color.applazAccent.opacity(0.15)))
             if !compact && !model.thread.messages.isEmpty { Text(chatStore.savedOnDevice ? "Private · Saved on this device" : "Private · Device save not confirmed").font(.caption2).foregroundColor(.black.opacity(0.5)) }
         }.foregroundColor(.black).wellnessCard(embedded: embedded)
             .onAppear { if let openingQuestion, !started { started = true; question = openingQuestion; send() } }

@@ -15,6 +15,7 @@ import GoogleMobileAds
 class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewDataSource, UITabBarDelegate {
     private var standaloneTabBar: UITabBar?
     private var aiPanel: AIInlinePanelController?
+    private var collaborationSubscription: AnyCancellable?
     
     var sharedObj: Shared?
     let iapObj = IAPHelper()
@@ -90,6 +91,8 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
     override func viewDidLoad() {
         super.viewDidLoad()
         installPrivateNotebooks()
+        collaborationSubscription = CollaborationStore.shared.$notebooks.receive(on: DispatchQueue.main).sink { [weak self] _ in self?.refreshPrivateNotebooks(); self?.tblViewNoteCateoryTitle.reloadData() }
+        Task { await CollaborationStore.shared.refresh() }
         aiPanel = AIInlinePanelController.footer(in: self, table: tblViewNoteCateoryTitle, title: "Ask my notebooks", scope: { .all })
         func matchSocialIcon(in view: UIView) {
             for child in view.subviews {
@@ -320,7 +323,14 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
         cell.btnShare.tag = indexPath.row
         
         cell.btnDelete.removeTarget(self, action: #selector(self.btnDeletePressed(_:)), for: .touchUpInside)
-        cell.btnUpdate.addTarget(self, action: #selector(self.btnUpdatePressed(_:)), for: .touchUpInside)
+        cell.btnUpdate.removeTarget(self, action: #selector(self.btnUpdatePressed(_:)), for: .touchUpInside)
+        cell.btnUpdate.setImage(UIImage(systemName: "person.badge.plus"), for: .normal)
+        cell.btnUpdate.accessibilityLabel = "Invite friends to notebook"
+        cell.btnUpdate.removeAction(identifiedBy: UIAction.Identifier("InviteNotebookFriends"), for: .touchUpInside)
+        cell.btnUpdate.addAction(UIAction(identifier: UIAction.Identifier("InviteNotebookFriends")) { [weak self, weak cell] _ in
+            guard let self, let cell, let row = self.tblViewNoteCateoryTitle.indexPath(for: cell)?.row, let id = self.notes[row].categoryKey else { return }
+            CollaborationPresentation.invite(kind: "legacy", sourceID: id, from: self)
+        }, for: .touchUpInside)
         cell.btnShare.addTarget(self, action: #selector(self.btnSharedPressed(_:)), for: .touchUpInside)
         
         let moreIcon = UIImage(systemName: "ellipsis", withConfiguration: UIImage.SymbolConfiguration(pointSize: 20, weight: .regular))
@@ -329,6 +339,10 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
         cell.btnDelete.accessibilityLabel = "More notebook options"
         cell.btnDelete.showsMenuAsPrimaryAction = true
         cell.btnDelete.menu = UIMenu(children: [
+            UIAction(title: "Rename", image: UIImage(systemName: "pencil")) { [weak self, weak cell] _ in
+                guard let self, let cell, let row = self.tblViewNoteCateoryTitle.indexPath(for: cell)?.row else { return }
+                cell.btnUpdate.tag = row; self.btnUpdatePressed(cell.btnUpdate)
+            },
             UIAction(title: "Delete", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self, weak cell] _ in
                 guard let self, let cell,
                       let currentIndexPath = self.tblViewNoteCateoryTitle.indexPath(for: cell) else { return }
@@ -358,6 +372,9 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if let key = notes[indexPath.row].categoryKey, let shared = CollaborationStore.shared.match(kind: "legacy", sourceID: key) {
+            CollaborationPresentation.open(shared.id, from: self); return
+        }
  
         
         let noteTitleListVC = self.storyboard?.instantiateViewController(withIdentifier: "NoteTitleListVC") as! NoteTitleListVC
@@ -443,7 +460,7 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
     }
     private func refreshPrivateNotebooks() {
         let notebooks = WellnessStore.shared.notebooks
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: CGFloat(notebooks.count * 64 + 62)))
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: CGFloat((notebooks.count + CollaborationStore.shared.sharedWithMe.count) * 64 + 62)))
         let stack = UIStackView(); stack.axis = .vertical; stack.spacing = 8
         stack.frame = header.bounds.insetBy(dx: 16, dy: 6); stack.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         let explore = UIButton(type: .system)
@@ -466,7 +483,7 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
             config.background.strokeWidth = 1
             button.configuration = config
             button.contentHorizontalAlignment = .leading
-            button.addAction(UIAction { [weak self] _ in guard let self else { return }; WellnessPresentation.notebook(notebook.id, from: self) }, for: .touchUpInside)
+            button.addAction(UIAction { [weak self] _ in guard let self else { return }; if let shared = CollaborationStore.shared.match(kind: "health", sourceID: notebook.id) { CollaborationPresentation.open(shared.id, from: self) } else { WellnessPresentation.notebook(notebook.id, from: self) } }, for: .touchUpInside)
             let more = UIButton(type: .system)
             more.setImage(UIImage(systemName: "ellipsis"), for: .normal); more.tintColor = ApplazAppearance.accent
             more.accessibilityLabel = "More notebook options"
@@ -485,11 +502,23 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
             }
             more.menu = UIMenu(children: options)
             more.widthAnchor.constraint(equalToConstant: 44).isActive = true
-            let row = UIStackView(arrangedSubviews: [button, more]); row.spacing = 2
+            let invite = UIButton(type: .system)
+            invite.setImage(UIImage(systemName: "person.badge.plus"), for: .normal); invite.tintColor = ApplazAppearance.accent
+            invite.accessibilityLabel = "Invite friends to " + notebook.name
+            invite.widthAnchor.constraint(equalToConstant: 36).isActive = true
+            invite.addAction(UIAction { [weak self] _ in guard let self else { return }; CollaborationPresentation.invite(kind: "health", sourceID: notebook.id, from: self) }, for: .touchUpInside)
+            let row = UIStackView(arrangedSubviews: [button, invite, more]); row.spacing = 2
             row.heightAnchor.constraint(equalToConstant: 56).isActive = true
             stack.addArrangedSubview(row)
         }
         header.addSubview(stack)
+        for shared in CollaborationStore.shared.sharedWithMe {
+            let button = UIButton(type: .system)
+            var config = UIButton.Configuration.plain(); config.title = shared.name; config.subtitle = "Shared with you"; config.image = UIImage(systemName: "person.2"); config.imagePadding = 12; config.baseForegroundColor = .black; config.background.backgroundColor = ApplazAppearance.surface; config.background.cornerRadius = 14
+            button.configuration = config; button.contentHorizontalAlignment = .leading
+            button.addAction(UIAction { [weak self] _ in guard let self else { return }; CollaborationPresentation.open(shared.id, from: self) }, for: .touchUpInside)
+            button.heightAnchor.constraint(equalToConstant: 56).isActive = true; stack.addArrangedSubview(button)
+        }
         tblViewNoteCateoryTitle.tableHeaderView = header
         tblViewNoteCateoryTitle.isHidden = false
         lblNotesCategoryNotFound.isHidden = true

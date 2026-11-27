@@ -107,3 +107,26 @@ Product 299 is matched in client and server; app ID is 6478957951. The backend i
 Health text and checklist syncing no longer has a 500/700 KB account allowance. Cloud snapshots are split into private Firestore documents rather than a single size-capped account field. The former 500 KB allowance now applies only to decoded photo bytes. Existing photos are retained; rejected new photos do not reject text changes. Removing photos makes room for later uploads. The eight-photo-per-note cap is removed. Chat's existing per-conversation cloud-record/message limits remain.
 
 The photo warning uses the app's translucent design and exactly: “Your storage is full. Delete photos to upload more.” Successful device writes are required before showing the saved status. Native screenshot: DesignPreviews/photo-storage/popup.png (simulated photo capacity error, offline sample records). Build, fourteen backend policy checks, ESLint and the popup display/dismissal check passed. Real-account multi-device sync and purchases remain separate live verification.
+
+
+## Collaboration and purchase entry points — build 1.0.16 (14)
+
+Notebooks now have an Invite friends icon. The creation sheet also offers Friends, with username search and a list of people the signed-in user follows. Invitations appear privately in Alerts with Accept and Decline. Acceptance grants editing and notifies the inviter. Notebook deletion is checked on the server and available only to the owner. Shared edits preserve other notes; conflicting older edits are rejected and device drafts are retained. Collaboration does not require Plus.
+
+The collaboration functions are deployed to the existing applaz-32772 project. Invitations and membership are protected by authenticated server endpoints and private Firestore collections. Existing Realtime Database access rules were not rewritten. Local emulator checks cover invite privacy, acceptance, decline, editing, owner-only deletion, legacy likes preservation and concurrent owner sync with large text snapshots. Real two-device use and operating-system push delivery have not been verified.
+
+The subscription screen now has an illustrated notebook, compact feature rows and a visible retryable purchase action. Both the current and legacy membership entry points use this screen. Product 299 loads at its localized weekly price. In the tested Apple storefront it returned no introductory offer. To offer the requested trial, configure a one-week Free Trial introductory offer for product 299 in App Store Connect, including active dates and supported countries. Eligible accounts then receive the Apple-confirmed trial through the normal purchase flow. No trial entitlement is fabricated in the client. Live purchase and restore remain unverified.
+
+Own saved private notes now expose Ask about this note with the same conversation key as the editor. The loading icon morphs between a translucent reflective star and orb and breathes while AI is loading, with a static Reduce Motion alternative. The starter guide is renamed How Applaz works; the untouched original Keep your work safe guide is removed without deleting user-edited content.
+
+The current photo warning supersedes the earlier build-12 wording: “Your notes are still syncing. Your photo storage is full. Delete a few photos to make room for more.”
+
+Native sample previews are in DesignPreviews/collaboration-refresh. Simulator build, eighteen backend policy checks, ESLint, local Firebase emulator integration and six native UI checks passed.
+
+To repeat collaboration integration checks, install functions dependencies, use Node 22 and Java 21, then run from the repository root:
+
+```sh
+firebase emulators:exec --project demo-applaz-collab --config functions/test/emulators/firebase.json --only auth,firestore,database "node functions/test/integration/collaboration.cjs"
+```
+
+The harness refuses non-local emulator hosts and uses fictional accounts only.

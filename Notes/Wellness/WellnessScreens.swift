@@ -2,62 +2,197 @@ import SwiftUI
 import UIKit
 import FirebaseAuth
 
+private struct AIStarOrbShape: Shape {
+    var morph: CGFloat
+    var animatableData: CGFloat { get { morph } set { morph = newValue } }
+    func path(in rect: CGRect) -> Path {
+        var path = Path(); let side = min(rect.width, rect.height)
+        for point in 0...96 {
+            let angle = CGFloat(point) / 96 * .pi * 2
+            let star = side * (0.16 + 0.32 * pow(abs(cos(angle * 2)), 6))
+            let radius = star * (1 - morph) + side * 0.43 * morph
+            let position = CGPoint(x: rect.midX + cos(angle) * radius, y: rect.midY + sin(angle) * radius)
+            if point == 0 { path.move(to: position) } else { path.addLine(to: position) }
+        }
+        path.closeSubpath(); return path
+    }
+}
 struct AIThinkingOrb: View {
+    var size: CGFloat = 76
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var breathe = false
+    private var morph: CGFloat { breathe ? 1 : 0 }
     var body: some View {
         ZStack {
-            Circle().fill(RadialGradient(colors: [.white.opacity(0.9), .purple.opacity(0.18), .applazAccent.opacity(0.20)], center: .topLeading, startRadius: 2, endRadius: 40))
-                .overlay(Circle().stroke(Color.white.opacity(0.8), lineWidth: 1))
-                .overlay(Ellipse().fill(Color.white.opacity(0.8)).frame(width: 24, height: 10).blur(radius: 3).offset(x: -10, y: -17))
-                .shadow(color: .purple.opacity(0.15), radius: breathe ? 18 : 8)
-                .scaleEffect(breathe ? 1.06 : 0.92)
-            Image(systemName: "sparkles").font(.system(size: 25, weight: .light)).foregroundColor(.applazAccent.opacity(0.8))
-        }.frame(width: 68, height: 68).accessibilityLabel("AI is thinking")
-            .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1.7).repeatForever(autoreverses: true)) { breathe = true } } }
+            AIStarOrbShape(morph: morph)
+                .fill(RadialGradient(colors: [.white.opacity(0.95), Color(red: 0.82, green: 0.83, blue: 1).opacity(0.65), Color.applazAccent.opacity(0.3)], center: .topLeading, startRadius: 0, endRadius: size))
+            AIStarOrbShape(morph: morph).fill(LinearGradient(colors: [.clear, Color.pink.opacity(0.13), Color.cyan.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            Ellipse().fill(.white.opacity(0.9)).frame(width: size * 0.42, height: size * 0.15)
+                .blur(radius: size * 0.035).rotationEffect(.degrees(-30)).offset(x: -size * 0.1, y: -size * 0.22)
+                .mask(AIStarOrbShape(morph: morph))
+            AIStarOrbShape(morph: morph).stroke(Color.white.opacity(0.8), lineWidth: 1)
+            Image(systemName: "sparkle").font(.system(size: size * 0.22, weight: .light))
+                .foregroundColor(.applazAccent.opacity(0.6)).opacity(breathe ? 0.35 : 0.8)
+        }.frame(width: size, height: size)
+            .scaleEffect(breathe ? 1.04 : 0.9)
+            .shadow(color: .purple.opacity(breathe ? 0.2 : 0.08), radius: breathe ? size * 0.18 : size * 0.06)
+            .accessibilityLabel("AI is thinking").accessibilityIdentifier("AIThinkingOrb")
+            .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) { breathe = true } } }
     }
 }
 struct SubscriptionWelcomeView: View {
     @ObservedObject private var subscription = SubscriptionCenter.shared
+    @State private var showPurchaseMessage = false
     var onClose: () -> Void
     var onPurchased: () -> Void
     var body: some View {
-        ZStack { WellnessBackground()
-            ScrollView { VStack(alignment: .leading, spacing: 22) {
-                Button(action: onClose) { Image(systemName: "xmark").frame(width: 44, height: 44) }.accessibilityLabel("Continue without subscribing")
-                Image(systemName: "sparkles").font(.system(size: 38, weight: .light)).foregroundColor(.applazAccent)
-                Text("Applaz").font(.system(size: 30, weight: .semibold))
-                Text("Goals Delivered").font(.system(size: 26, weight: .medium))
-                Text("Reach your goals").font(.title3)
-                VStack(alignment: .leading, spacing: 18) {
-                    Label("Routines & checklists that fit your day", systemImage: "checklist")
-                    Label("Ask your notebooks. Find your patterns.", systemImage: "sparkles")
-                    Label("Meal estimates from words or a photo", systemImage: "camera")
-                }.wellnessCard()
-                Text(subscription.eligibleTrial ? "1 week free, then \(subscription.price)/week" : "\(subscription.price)/week").font(.system(size: 20, weight: .semibold))
-                Text("Applaz Plus · Weekly AI credits for chat, insights and meal estimates.").font(.subheadline)
-                Button { Task { if await subscription.purchase() {
-                    onPurchased()
-                    if Auth.auth().currentUser == nil { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { WellnessPresentation.signInAfterPurchase() } }
-                } } } label: {
-                    Text(subscription.busy ? "Connecting to Apple…" : (subscription.eligibleTrial ? "Start free trial" : "Continue"))
-                }.buttonStyle(ApplazBubbleButtonStyle()).disabled(subscription.busy || subscription.product == nil || !subscription.serviceReady)
-                if let message = subscription.message { Text(message).font(.footnote) }
-                if !subscription.serviceReady { Text("Subscriptions will be available soon. You can keep using your notebooks for free.").font(.footnote) }
-                Text(subscription.eligibleTrial ? "No charge today. Your subscription renews at \(subscription.price)/week after the free week unless canceled at least 24 hours before it ends. Manage or cancel in Apple Account settings." : "Renews automatically at \(subscription.price)/week unless canceled at least 24 hours before the current period ends. Manage or cancel in Apple Account settings.").font(.caption).foregroundColor(.black.opacity(0.65))
-                HStack { Button("Restore purchases") { Task {
-                    await subscription.restore()
-                    if subscription.hasAppleSubscription {
+        ZStack {
+            WellnessBackground()
+            ScrollView {
+                VStack(spacing: 18) {
+                    HStack {
+                        Button(action: onClose) { Image(systemName: "xmark").font(.system(size: 17)).frame(width: 44, height: 44) }
+                            .accessibilityLabel("Continue without subscribing")
+                        Spacer()
+                        Text("Applaz Plus").font(.system(size: 17, weight: .medium))
+                        Spacer()
+                        Color.clear.frame(width: 44, height: 44)
+                    }
+                    SubscriptionNotebookPreview().frame(height: 220).accessibilityHidden(true)
+                    VStack(spacing: 6) {
+                        Text("Reach your goals.").font(.system(size: 26, weight: .semibold))
+                        Text("Your everyday plans, with a little more insight.")
+                            .font(.system(size: 15)).foregroundColor(.black.opacity(0.65)).multilineTextAlignment(.center)
+                    }
+                    VStack(alignment: .leading, spacing: 13) {
+                        feature("checklist", "Make room for your routines", "Checklists and health templates for your day.")
+                        feature("sparkles", "Ask your notebooks", "Chat with your notes and spot your patterns.")
+                        feature("camera", "Keep meals simple", "Calorie estimates from words or a photo.")
+                    }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.white.opacity(0.52)).clipShape(RoundedRectangle(cornerRadius: 20))
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.applazAccent.opacity(0.12)))
+                }.padding(.horizontal, 24).padding(.bottom, 12).frame(maxWidth: 490)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .foregroundColor(.black).tint(.applazAccent).navigationBarHidden(true)
+        .safeAreaInset(edge: .bottom, spacing: 0) { purchaseArea }
+        .task { await subscription.loadProduct() }
+        .alert("Your subscription", isPresented: $showPurchaseMessage) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(subscription.message ?? "Please try again.") }
+    }
+    private func feature(_ symbol: String, _ title: String, _ subtitle: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: symbol).font(.system(size: 21, weight: .light)).foregroundColor(.applazAccent).frame(width: 27, height: 28)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.system(size: 15, weight: .medium))
+                Text(subtitle).font(.system(size: 13)).foregroundColor(.black.opacity(0.6))
+            }
+        }
+    }
+    private var purchaseArea: some View {
+        VStack(spacing: 10) {
+            if subscription.product != nil {
+                Text(subscription.eligibleTrial ? "1 week free, then \(subscription.price)/week" : "\(subscription.price)/week")
+                    .font(.system(size: 17, weight: .semibold))
+            } else {
+                Text(subscription.loadingProduct ? "Loading your membership…" : "Weekly membership")
+                    .font(.system(size: 17, weight: .medium))
+            }
+            Button {
+                Task {
+                    if await subscription.purchase() {
                         onPurchased()
                         if Auth.auth().currentUser == nil { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { WellnessPresentation.signInAfterPurchase() } }
-                    }
-                } }; Spacer(); Link("Terms", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) }
-                    .font(.footnote)
-                NavigationLink("Privacy & AI", destination: AIPrivacyView())
-            }.padding(24) }.foregroundColor(.black).tint(.applazAccent)
-        }.task { await subscription.loadProduct() }
+                    } else if subscription.message != nil { showPurchaseMessage = true }
+                }
+            } label: {
+                HStack(spacing: 9) {
+                    if subscription.busy || subscription.loadingProduct { ProgressView().tint(.applazAccent) }
+                    Text(subscription.busy ? "Connecting to Apple…" : subscription.loadingProduct ? "Loading…" : subscription.eligibleTrial ? "Start free trial" : "Continue")
+                }
+            }.buttonStyle(ApplazBubbleButtonStyle())
+                .accessibilityIdentifier("SubscriptionPurchase")
+                .disabled(subscription.busy || subscription.loadingProduct)
+            if let message = subscription.message {
+                Text(message).font(.system(size: 12)).foregroundColor(.black.opacity(0.65)).multilineTextAlignment(.center)
+                    .accessibilityIdentifier("SubscriptionStatus")
+            }
+            if subscription.product != nil, let reason = subscription.trialUnavailableReason {
+                Text(reason).font(.system(size: 12)).foregroundColor(.black.opacity(0.6)).multilineTextAlignment(.center)
+            }
+            Text(renewalText).font(.system(size: 11)).foregroundColor(.black.opacity(0.6)).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 18) {
+                Button("Restore") { Task {
+                    await subscription.restore()
+                    if subscription.hasAppleSubscription && (Auth.auth().currentUser == nil || subscription.capacity > 0) {
+                        onPurchased()
+                        if Auth.auth().currentUser == nil { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { WellnessPresentation.signInAfterPurchase() } }
+                    } else if subscription.message != nil { showPurchaseMessage = true }
+                } }.accessibilityLabel("Restore purchases").disabled(subscription.busy)
+                Link("Terms", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                Button("Privacy & AI") { showPrivacy = true }
+            }.font(.system(size: 12))
+        }.padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 8)
+            .frame(maxWidth: 490).frame(maxWidth: .infinity)
+            .background(Color.white.opacity(0.5))
+            .sheet(isPresented: $showPrivacy) {
+                NavigationView { AIPrivacyView().toolbar { ToolbarItem(placement: .navigationBarLeading) { Button("Done") { showPrivacy = false } } } }
+            }
+    }
+    @State private var showPrivacy = false
+    private var renewalText: String {
+        guard subscription.product != nil else { return "Apple will show the price and subscription terms before you confirm. Weekly AI credits are included." }
+        return subscription.eligibleTrial
+            ? "No charge today. After your free week, renews at \(subscription.price)/week unless canceled at least 24 hours before renewal. Manage or cancel in Apple Account settings. Weekly AI credits included."
+            : "Renews at \(subscription.price)/week unless canceled at least 24 hours before renewal. Manage or cancel in Apple Account settings. Weekly AI credits included."
     }
 }
+
+private struct SubscriptionNotebookPreview: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 26).fill(Color.white.opacity(0.28))
+                .frame(width: 210, height: 192).rotationEffect(.degrees(-12)).offset(x: -24, y: 2)
+            HStack(spacing: 0) {
+                VStack(spacing: 13) {
+                    ForEach(0..<6, id: \.self) { _ in Capsule().fill(Color.applazAccent.opacity(0.22)).frame(width: 18, height: 4) }
+                }.frame(width: 30)
+                VStack(alignment: .leading, spacing: 13) {
+                    HStack { Image(systemName: "book.closed"); Text("Daily wellness").fontWeight(.medium) }.font(.system(size: 15))
+                    Rectangle().fill(Color.applazAccent.opacity(0.1)).frame(height: 1)
+                    row("Lemon water", checked: true)
+                    row("A little movement", checked: true)
+                    row("Time to reflect", checked: false)
+                    HStack { Text("Small habits. Your pace.").font(.system(size: 11)); Spacer(); Image(systemName: "sparkle").foregroundColor(.applazAccent) }
+                }.padding(.vertical, 18).padding(.trailing, 18)
+            }.frame(width: 260).background(Color.white.opacity(0.8))
+                .clipShape(RoundedRectangle(cornerRadius: 19))
+                .overlay(RoundedRectangle(cornerRadius: 19).stroke(Color.applazAccent.opacity(0.15)))
+                .shadow(color: Color.applazAccent.opacity(0.1), radius: 14, y: 7)
+                .rotationEffect(.degrees(-5)).offset(x: -16, y: -10)
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles").foregroundColor(.applazAccent)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("A little insight").font(.system(size: 13, weight: .medium))
+                    Text("Find your patterns").font(.system(size: 11)).foregroundColor(.black.opacity(0.6))
+                }
+                Image(systemName: "chart.xyaxis.line").font(.system(size: 21, weight: .light)).foregroundColor(.applazAccent.opacity(0.7))
+            }.padding(12).background(Color.white.opacity(0.94)).clipShape(RoundedRectangle(cornerRadius: 15))
+                .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.applazAccent.opacity(0.12)))
+                .shadow(color: Color.applazAccent.opacity(0.08), radius: 10, y: 4)
+                .rotationEffect(.degrees(5)).offset(x: 54, y: 80)
+        }.foregroundColor(.black)
+    }
+    private func row(_ title: String, checked: Bool) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: checked ? "checkmark.square.fill" : "square").foregroundColor(.applazAccent.opacity(checked ? 0.8 : 0.45))
+            Text(title).font(.system(size: 13)).foregroundColor(.black.opacity(checked ? 0.55 : 0.85))
+        }
+    }
+}
+
 struct AIPrivacyView: View {
     @ObservedObject private var subscription = SubscriptionCenter.shared
     @State private var error: String?
@@ -96,19 +231,30 @@ struct SubscriptionSettingsView: View {
     }
 }
 struct WellnessLibraryView: View {
+    @ObservedObject private var collaboration = CollaborationStore.shared
     @ObservedObject private var store = WellnessStore.shared
     @State private var importGuest = false
     @State private var create = false
     @State private var chat = false
+    @State private var inviteID: String?
+    @State private var invitationError: String?
     var close: () -> Void
     var body: some View {
         NavigationView { ZStack { WellnessBackground(); VStack(spacing: 0) {
             WellnessNavigationBar(title: "Notebooks", back: close, add: { create = true })
             ScrollView { VStack(alignment: .leading, spacing: 16) {
                 HStack { Text("Your notebooks").font(.headline); Spacer(); Button { chat = true } label: { Image(systemName: "clock.arrow.circlepath") }.accessibilityLabel("Saved chats") }
-                ForEach(store.notebooks) { notebook in NavigationLink(destination: WellnessNotebookView(notebookID: notebook.id)) {
-                    HStack { Image(systemName: notebook.kind == "text" ? "book.closed" : "checklist").foregroundColor(.applazAccent); VStack(alignment: .leading, spacing: 4) { Text(notebook.name).font(.headline); Text("\(notebook.isPrivate == false ? "Public" : "Private") · \(notebook.notes.count) \(notebook.notes.count == 1 ? "note" : "notes")").font(.caption).foregroundColor(.black.opacity(0.55)) }; Spacer(); Image(systemName: "chevron.right").font(.caption) }.wellnessCard()
-                }.buttonStyle(.plain) }
+                ForEach(store.notebooks) { notebook in HStack(spacing: 10) {
+                    NavigationLink(destination: notebookDestination(notebook.id)) {
+                        HStack { Image(systemName: notebook.kind == "text" ? "book.closed" : "checklist").foregroundColor(.applazAccent); VStack(alignment: .leading, spacing: 4) { Text(notebook.name).font(.headline); Text("\(notebook.isPrivate == false ? "Public" : "Private") · \(notebook.notes.count) \(notebook.notes.count == 1 ? "note" : "notes")").font(.caption).foregroundColor(.black.opacity(0.55)) }; Spacer() }
+                    }.buttonStyle(.plain)
+                    Button { inviteID = notebook.id } label: { Image(systemName: "person.badge.plus").font(.system(size: 20, weight: .regular)).frame(width: 36, height: 44) }.accessibilityLabel("Invite friends to " + notebook.name)
+                }.wellnessCard() }
+                ForEach(collaboration.sharedWithMe) { shared in
+                    NavigationLink(destination: CollaborativeNotebookView(notebookID: shared.id)) {
+                        HStack { Image(systemName: "person.2"); VStack(alignment: .leading, spacing: 4) { Text(shared.name).font(.headline); Text("Shared with you").font(.caption).foregroundColor(.black.opacity(0.55)) }; Spacer(); Image(systemName: "chevron.right").font(.caption) }.wellnessCard()
+                    }.buttonStyle(.plain)
+                }
                 if store.hasGuestWork { Button("Copy my guest work into this account") { importGuest = true }.font(.footnote) }
                 InlineAIChat(scope: .all, title: "Ask my notebooks", compact: true, overview: true)
                 NavigationLink("Consistency & insights", destination: WellnessInsightsView())
@@ -116,7 +262,16 @@ struct WellnessLibraryView: View {
                 if let message = store.syncMessage { Text(message).font(.caption).foregroundColor(.black.opacity(0.55)) }
             }.padding(20) }
         }}.foregroundColor(.black).tint(.applazAccent).navigationBarHidden(true) }
+        .task { await collaboration.refresh() }
+        .sheet(isPresented: Binding(get: { inviteID != nil }, set: { if !$0 { inviteID = nil } })) {
+            CollaborationPeoplePicker(done: { people in let id = inviteID; inviteID = nil; guard let id else { return }; Task { do { _ = try await collaboration.invite(kind: "health", sourceID: id, people: people) } catch { invitationError = error.localizedDescription } } }, cancel: { inviteID = nil })
+        }
+        .alert("Couldn’t send invitations", isPresented: Binding(get: { invitationError != nil }, set: { if !$0 { invitationError = nil } })) { Button("OK", role: .cancel) {} } message: { Text(invitationError ?? "") }
         .navigationViewStyle(.stack).confirmationDialog("Copy guest notebooks and meals from this device into your signed-in account?", isPresented: $importGuest, titleVisibility: .visible) { Button("Copy my guest work") { store.importGuestWork() } }.sheet(isPresented: $create) { CreateWellnessNotebookView().modifier(WellnessHalfSheet()) }.sheet(isPresented: $chat) { NavigationView { SavedAIChatsView() } }
+    }
+    @ViewBuilder private func notebookDestination(_ id: String) -> some View {
+        if let shared = collaboration.match(kind: "health", sourceID: id) { CollaborativeNotebookView(notebookID: shared.id) }
+        else { WellnessNotebookView(notebookID: id) }
     }
 }
 struct CreateWellnessNotebookView: UIViewControllerRepresentable {

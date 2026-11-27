@@ -68,8 +68,13 @@ exports.wellnessSync = call(async (data, uid) => {
     chunks.forEach((text, i) => tx.set(ref.collection("snapshot").doc(String(i)), {text}));
     for (let i = chunks.length; i < (prior.snapshotChunks || 0); i++) tx.delete(ref.collection("snapshot").doc(String(i)));
     tx.set(ref, {document: admin.firestore.FieldValue.delete(), snapshotChunks: chunks.length, publicPending: pending}, {merge: true});
-    return {document, pending, fingerprints: prior.publicFingerprints || {}, photoStorageFull: photos.photoStorageFull};
+    return {document, previous, pending, fingerprints: prior.publicFingerprints || {}, photoStorageFull: photos.photoStorageFull};
   });
+  for (let i = 0; i < state.document.notebooks.length; i++) {
+    const notebook = state.document.notebooks[i];
+    const merged = await require("../collaboration").syncHealthNotebook(uid, state.previous?.notebooks?.find(n => n.id === notebook.id), notebook);
+    if (merged) state.document.notebooks[i] = merged;
+  }
   for (const notebook of state.document.notebooks.filter(n => state.pending[n.id] !== undefined)) {
     const published = policy.publicNotebook(notebook);
     const fingerprint = digest(JSON.stringify({...published, wellnessUpdatedAt: 0}));

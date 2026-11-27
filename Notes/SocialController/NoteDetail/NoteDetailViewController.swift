@@ -20,6 +20,8 @@ class NoteDetailViewController: UIViewController {
     private let commentButton = UIButton(type: .system)
     private let copyButton = UIButton(type: .system)
     private let askButton = UIButton(type: .system)
+    private var inlineAI: AIInlinePanelController?
+    private var inlineAIHeight: NSLayoutConstraint?
     private let commentRows = UIStackView()
     private let commentField = UITextField()
     private let sendButton = UIButton(type: .system)
@@ -172,7 +174,23 @@ class NoteDetailViewController: UIViewController {
 
     private func configure() {
         guard isViewLoaded, let note else { return }
-        copyButton.isHidden = note.isPrivateNote != false; askButton.isHidden = note.isPrivateNote != false
+        copyButton.isHidden = note.isPrivateNote != false
+        let scope = WellnessPresentation.noteChatScope(note)
+        askButton.isHidden = scope == nil
+        let owner = Auth.auth().currentUser?.uid ?? SocialUserModel.current?.ref.key
+        if owner != nil, note.user_id == owner, scope != nil, inlineAI == nil {
+            let panel = AIInlinePanelController(title: "Ask about this note", scope: { [weak self] in
+                guard let note = self?.note else { return .note("") }
+                return WellnessPresentation.noteChatScope(note) ?? .note("")
+            })
+            inlineAI = panel
+            addChild(panel); panel.loadViewIfNeeded()
+            content.insertArrangedSubview(panel.view, at: 3)
+            let height = panel.view.heightAnchor.constraint(equalToConstant: 240)
+            inlineAIHeight = height; height.isActive = true
+            panel.heightChanged = { [weak self] value in self?.inlineAIHeight?.constant = value }
+            panel.didMove(toParent: self)
+        }
         usernameLabel.text = note.nameUser
         titleLabel.text = note.noteTitleName
         descriptionLabel.attributedText = note.noteDescriptionText?.setAttributetext(fontsize: 17, fontName: "AvenirNext-Regular")

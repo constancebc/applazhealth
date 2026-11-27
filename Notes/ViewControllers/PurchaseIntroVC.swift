@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import SwiftUI
 
 class PurchaseIntroVC: UIViewController {
 
@@ -17,6 +18,13 @@ class PurchaseIntroVC: UIViewController {
         super.viewDidLoad()
 
        sharedObj = Shared.sharedInstance
+       view = UIView()
+       let host = UIHostingController(rootView: NavigationView {
+           SubscriptionWelcomeView(onClose: { [weak self] in self?.gotoNextVC() }, onPurchased: { [weak self] in self?.gotoNextVC() })
+       }.navigationViewStyle(.stack))
+       addChild(host); view.addSubview(host.view); host.view.translatesAutoresizingMaskIntoConstraints = false
+       NSLayoutConstraint.activate([host.view.leadingAnchor.constraint(equalTo: view.leadingAnchor), host.view.trailingAnchor.constraint(equalTo: view.trailingAnchor), host.view.topAnchor.constraint(equalTo: view.topAnchor), host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)])
+       host.view.accessibilityViewIsModal = true; host.didMove(toParent: self)
     }
     
     func gotoNextVC() {

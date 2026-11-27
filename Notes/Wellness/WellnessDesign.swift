@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import FirebaseAuth
 
 extension Color {
     static let applazInk = Color.black
@@ -63,13 +64,21 @@ final class WellnessHostingController<Content: View>: UIHostingController<Conten
         let host = WellnessHostingController(rootView: AIChatView(context: context, scope: scope))
         controller.present(host, animated: true)
     }
-    static func publicNoteChat(_ note: NoteList, from controller: UIViewController) {
-        guard note.isPrivateNote == false else { return }
+    static func noteChatScope(_ note: NoteList) -> AIScope? {
+        noteChatScope(note, viewerID: Auth.auth().currentUser?.uid)
+    }
+    static func noteChatScope(_ note: NoteList, viewerID: String?) -> AIScope? {
+        let own = viewerID != nil && note.user_id == viewerID
+        guard own || note.isPrivateNote == false else { return nil }
         let html = note.noteDescriptionText ?? ""
         let body = html.setAttributetext(fontsize: 16, fontName: "AvenirNext-Regular")?.string ?? html
-        let context = "Public note: " + (note.noteTitleName ?? "") + "\n" + body
-        let key = note.noteKey.map { "public-note:" + (note.user_id ?? "") + ":" + (note.parentCategoryKey ?? "") + ":" + $0 }
-        chat(from: controller, context: context, scope: .note(context, key: key))
+        let context = (own ? "My note: " : "Public note: ") + (note.noteTitleName ?? "") + "\n" + body
+        let key = note.noteKey.map { own ? "regular-note:" + $0 : "public-note:" + (note.user_id ?? "") + ":" + (note.parentCategoryKey ?? "") + ":" + $0 }
+        return .note(context, key: key)
+    }
+    static func publicNoteChat(_ note: NoteList, from controller: UIViewController) {
+        guard let scope = noteChatScope(note) else { return }
+        chat(from: controller, context: scope.fixedContext, scope: scope)
     }
     static func library(from controller: UIViewController) {
         let host = WellnessHostingController(rootView: WellnessLibraryView(close: { [weak controller] in controller?.navigationController?.popViewController(animated: true) }).modifier(WellnessMenuModifier(controller: controller, enabled: controller.tabBarController == nil)))

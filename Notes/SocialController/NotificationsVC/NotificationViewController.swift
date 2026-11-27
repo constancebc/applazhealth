@@ -37,7 +37,7 @@ class NotificationViewController: UIViewController, UITableViewDelegate, UITable
         view.backgroundColor = ApplazAppearance.surface
         tableView.backgroundColor = .clear
         refreshInbox()
-        
+        Task { await CollaborationStore.shared.refresh() }
     }
     
     private func setupTableView() {
@@ -79,18 +79,34 @@ class NotificationViewController: UIViewController, UITableViewDelegate, UITable
         
         let notification = notifications[indexPath.row]
         cell.configure(with: notification)
+        cell.onAccept = { [weak self] in self?.respond(to: notification, accept: true) }
+        cell.onDecline = { [weak self] in self?.respond(to: notification, accept: false) }
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let notification = notifications[indexPath.row]
         guard let uid = Auth.auth().currentUser?.uid, notification.recipientID == uid else { return }
+        if let id = notification.collaborationNotebookID {
+            if notification.notificationType == .notebookAccepted { CollaborationPresentation.open(id, from: self) }
+            return
+        }
         let detail = NoteDetailViewController()
         detail.userId = uid
         detail.noteKey = notification.noteKey
         navigationController?.pushViewController(detail, animated: true)
     }
 
+    private func respond(to notification: NotificationList, accept: Bool) {
+        guard let id = notification.collaborationInvitationID else { return }
+        Task { do {
+            let notebookID = try await CollaborationStore.shared.respond(id, accept: accept)
+            if let notebookID { CollaborationPresentation.open(notebookID, from: self) }
+        } catch {
+            let alert = UIAlertController(title: "Couldn’t update invitation", message: error.localizedDescription, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default)); present(alert, animated: true)
+        } }
+    }
     func navigateToProfile(note: NoteList) {
         let storyBoard = UIStoryboard(name: "Profile", bundle: nil)
         

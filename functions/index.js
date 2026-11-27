@@ -26,3 +26,5 @@ exports.onNoteChange = functions.database
   });
 
 Object.assign(exports, require("./wellness"));
+
+Object.assign(exports, require("./collaboration"));

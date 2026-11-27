@@ -280,25 +280,7 @@ class SettingsVC: UIViewController, TOPasscodeViewControllerDelegate {
     }
     
     @IBAction func membershipAction(_ sender: Any) {
-        
-        if sharedObj!.isProductPurchased == false {
-            
-            //iapObj.purchase()
-            
-            let vc = self.storyboard?.instantiateViewController(withIdentifier: "PurchaseIntroVC") as! PurchaseIntroVC
-            self.present(vc, animated: true, completion: nil)
-            
-            return
-        }
-        
-        /*
-         // verify in app purchase
-         if (self.sharedObj?.isReachable)! {
-         
-         iapObj.autoRenewableVerifyPurchase(isShowActivity: true)
-         iapObj.autoRenewableGetInfo()
-         }
-        */
+        WellnessPresentation.subscription(from: self)
     }
     
     @IBAction func themeAction(_ sender: Any) {

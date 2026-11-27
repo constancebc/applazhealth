@@ -57,6 +57,8 @@ extension AppDelegate {
               recipient == Auth.auth().currentUser?.uid else { return }
         ApplazActivityInbox.shared.start()
         switch type {
+        case "notebookInvite", "notebookAccepted":
+            navigateTo(NotificationViewController())
         case "story":
             let storyboard = UIStoryboard(name: "Story", bundle: Bundle.main)
             

@@ -481,6 +481,7 @@ class NoteTitleListVC: UIViewController, UITableViewDataSource, UITableViewDeleg
         
         let vc = NoteDetailViewController()
         if (userId.isEmpty) {
+            vc.userId = Auth.auth().currentUser?.uid
             if let user  = SocialUserModel.current {
                 if let key = user.ref.key {
                     vc.userId = key

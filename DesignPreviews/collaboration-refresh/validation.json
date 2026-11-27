@@ -1,0 +1,20 @@
+{
+  "version": "1.0.16",
+  "build": 14,
+  "nativeSimulatorCaptures": true,
+  "samplePeople": true,
+  "realInvitationsSent": false,
+  "checks": [
+    "Simulator build passed",
+    "18 backend policy checks passed",
+    "Local Firebase emulator invitation, permissions and sync flow passed",
+    "6 native UI checks passed"
+  ],
+  "unverified": [
+    "Real two-device account flow",
+    "Real Apple purchase and restore",
+    "OS push delivery"
+  ],
+  "appleProduct": "299",
+  "introductoryOfferReturnedInTestedStorefront": false
+}
