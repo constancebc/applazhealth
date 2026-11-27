@@ -154,3 +154,8 @@ An outlined envelope invitation icon is shown until at least one editor accepts;
 Visibility confirmation respects Cancel, preserves notebook order and changes only the privacy flag for legacy guest rows, reports legacy cloud update failures, and preserves accepted editor membership. The legacy source-to-collaboration mirror now applies privacy-only changes without replacing note content or membership. Local Firebase integration, eighteen policy tests, lint and simulator compilation passed.
 
 The build-16 native preview was visually checked. Its automated tap test stalled while establishing the simulator automation session and is not reported as passing. Backend visibility/member preservation checks passed.
+
+
+## Notebook icon refinement — build 1.0.16 (17)
+
+The grid globe is replaced by the outlined continental globe. Invitations use a custom thin-line person with a plain plus, with no badge ring or envelope. Accepted collaborators still use person.2; private notebooks retain the lock. Icon changes apply to the main notebook list, the notebook library, creation and notebook-selection menus. Existing visibility and invitation handlers are unchanged. Simulator compilation passed.

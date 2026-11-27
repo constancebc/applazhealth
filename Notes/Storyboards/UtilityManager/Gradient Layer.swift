@@ -597,7 +597,7 @@ final class NewNotebookViewController: UIViewController {
             return row
         }
         var friendsConfig = UIButton.Configuration.plain()
-        friendsConfig.title = "Invite friends"; friendsConfig.image = UIImage(systemName: "envelope.badge", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)); friendsConfig.imagePadding = 8
+        friendsConfig.title = "Invite friends"; friendsConfig.image = NotebookIcons.invitation; friendsConfig.imagePadding = 8
         friendsConfig.baseForegroundColor = ApplazAppearance.accent
         inviteFriendsButton.configuration = friendsConfig
         inviteFriendsButton.tintColor = ApplazAppearance.accent
@@ -634,7 +634,7 @@ final class NewNotebookViewController: UIViewController {
                 }
             }
             let privateActions = WellnessStore.shared.notebooks.map { notebook in
-                UIAction(title: notebook.name + (notebook.isPrivate == false ? " · Public" : " · Private"), image: UIImage(systemName: notebook.isPrivate == false ? "globe" : "lock")) { [weak self] _ in
+                UIAction(title: notebook.name + (notebook.isPrivate == false ? " · Public" : " · Private"), image: UIImage(systemName: notebook.isPrivate == false ? "globe.americas" : "lock")) { [weak self] _ in
                     guard let self else { return }
                     self.dismiss(animated: true) { self.onSelectPrivateNotebook?(notebook.id) }
                 }

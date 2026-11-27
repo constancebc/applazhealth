@@ -3,6 +3,18 @@ import UIKit
 import FirebaseAuth
 import Combine
 
+enum NotebookIcons {
+    static let invitation: UIImage = {
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).image { renderer in
+            renderer.cgContext.scaleBy(x: 20 / 24, y: 20 / 24)
+            UIColor.black.setStroke()
+            let head = UIBezierPath(ovalIn: CGRect(x: 5.2, y: 2.7, width: 6.6, height: 6.6)); head.lineWidth = 1.5; head.stroke()
+            let shoulders = UIBezierPath(); shoulders.move(to: CGPoint(x: 2, y: 20.5)); shoulders.addLine(to: CGPoint(x: 2, y: 17.5)); shoulders.addCurve(to: CGPoint(x: 15, y: 17.5), controlPoint1: CGPoint(x: 2, y: 10.5), controlPoint2: CGPoint(x: 15, y: 10.5)); shoulders.addLine(to: CGPoint(x: 15, y: 20.5)); shoulders.close(); shoulders.lineWidth = 1.5; shoulders.lineJoinStyle = .round; shoulders.stroke()
+            let plus = UIBezierPath(); plus.move(to: CGPoint(x: 17, y: 11.5)); plus.addLine(to: CGPoint(x: 23, y: 11.5)); plus.move(to: CGPoint(x: 20, y: 8.5)); plus.addLine(to: CGPoint(x: 20, y: 14.5)); plus.lineWidth = 1.5; plus.lineCapStyle = .round; plus.stroke()
+        }
+        return image.withRenderingMode(.alwaysTemplate)
+    }()
+}
 struct CollaborationPerson: Decodable, Identifiable {
     var id: String
     var name: String
@@ -119,7 +131,7 @@ struct CollaborationMembersView: View {
         return notebooks.first { $0.kind == kind && $0.sourceID == sourceID && $0.owner == Auth.auth().currentUser?.uid }
     }
     func hasEditors(kind: String, sourceID: String) -> Bool { (match(kind: kind, sourceID: sourceID)?.editorCount ?? 0) > 0 }
-    func icon(kind: String, sourceID: String) -> String { hasEditors(kind: kind, sourceID: sourceID) ? "person.2" : "envelope.badge" }
+    func image(kind: String, sourceID: String) -> UIImage { hasEditors(kind: kind, sourceID: sourceID) ? (UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)) ?? NotebookIcons.invitation) : NotebookIcons.invitation }
     var sharedWithMe: [CollaborativeNotebook] { notebooks.filter { $0.role != "owner" } }
     func invite(kind: String, sourceID: String, people: [CollaborationPerson], notebookID: String? = nil) async throws -> String {
         var data: [String: Any] = ["kind": kind, "sourceID": sourceID, "recipients": people.map(\.id)]

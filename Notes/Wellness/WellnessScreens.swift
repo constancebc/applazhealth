@@ -255,11 +255,11 @@ struct WellnessLibraryView: View {
             ScrollView { VStack(alignment: .leading, spacing: 16) {
                 HStack { Text("Your notebooks").font(.headline); Spacer(); Button { chat = true } label: { Image(systemName: "clock.arrow.circlepath") }.accessibilityLabel("Saved chats") }
                 ForEach(store.notebooks) { notebook in HStack(spacing: 10) {
-                    Button { visibilityID = notebook.id } label: { Image(systemName: notebook.isPrivate == false ? "globe" : "lock").font(.system(size: 18, weight: .regular)).foregroundColor(.applazAccent).frame(width: 36, height: 44) }.accessibilityLabel("Visibility of " + notebook.name).accessibilityValue(notebook.isPrivate == false ? "Public" : "Private").disabled(notebook.id == "start-here-v1")
+                    Button { visibilityID = notebook.id } label: { Image(systemName: notebook.isPrivate == false ? "globe.americas" : "lock").font(.system(size: 18, weight: .regular)).foregroundColor(.applazAccent).frame(width: 36, height: 44) }.accessibilityLabel("Visibility of " + notebook.name).accessibilityValue(notebook.isPrivate == false ? "Public" : "Private").disabled(notebook.id == "start-here-v1")
                     NavigationLink(destination: notebookDestination(notebook.id)) {
                         HStack { VStack(alignment: .leading, spacing: 4) { Text(notebook.name).font(.headline); Text("\(notebook.isPrivate == false ? "Public" : "Private") · \(notebook.notes.count) \(notebook.notes.count == 1 ? "note" : "notes")").font(.caption).foregroundColor(.black.opacity(0.55)) }; Spacer() }
                     }.buttonStyle(.plain)
-                    Button { inviteID = notebook.id } label: { Image(systemName: collaboration.icon(kind: "health", sourceID: notebook.id)).font(.system(size: 18, weight: .regular)).frame(width: 36, height: 44) }.accessibilityLabel(!collaboration.hasEditors(kind: "health", sourceID: notebook.id) ? "Invite friends to " + notebook.name : "Friends in " + notebook.name)
+                    Button { inviteID = notebook.id } label: { Image(uiImage: collaboration.image(kind: "health", sourceID: notebook.id)).font(.system(size: 18, weight: .regular)).frame(width: 36, height: 44) }.accessibilityLabel(!collaboration.hasEditors(kind: "health", sourceID: notebook.id) ? "Invite friends to " + notebook.name : "Friends in " + notebook.name)
                 }.wellnessCard() }
                 ForEach(collaboration.sharedWithMe) { shared in
                     NavigationLink(destination: CollaborativeNotebookView(notebookID: shared.id)) {
@@ -322,7 +322,7 @@ struct WellnessNotebookView: View {
     var body: some View {
         ZStack { WellnessBackground(); ScrollView { VStack(alignment: .leading, spacing: 16) {
             if let notebook {
-                HStack { Label(notebook.isPrivate == false ? "Public" : "Private", systemImage: notebook.isPrivate == false ? "globe" : "lock").font(.caption); Spacer(); Menu {
+                HStack { Label(notebook.isPrivate == false ? "Public" : "Private", systemImage: notebook.isPrivate == false ? "globe.americas" : "lock").font(.caption); Spacer(); Menu {
                     if notebook.id != "start-here-v1" { Button(notebook.isPrivate == false ? "Make private" : "Make public") { changingPrivacy = true } }
                     Button("Delete notebook", role: .destructive) { deleting = true }
                 } label: { Image(systemName: "ellipsis").frame(width: 44, height: 44) } }

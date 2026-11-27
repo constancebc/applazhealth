@@ -324,7 +324,7 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
         
         cell.btnDelete.removeTarget(self, action: #selector(self.btnDeletePressed(_:)), for: .touchUpInside)
         cell.btnUpdate.removeTarget(self, action: #selector(self.btnUpdatePressed(_:)), for: .touchUpInside)
-        cell.btnUpdate.setImage(UIImage(systemName: CollaborationStore.shared.icon(kind: "legacy", sourceID: note.categoryKey ?? ""), withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal)
+        cell.btnUpdate.setImage(CollaborationStore.shared.image(kind: "legacy", sourceID: note.categoryKey ?? ""), for: .normal)
         cell.btnUpdate.tintColor = ApplazAppearance.accent
         cell.btnUpdate.accessibilityLabel = !CollaborationStore.shared.hasEditors(kind: "legacy", sourceID: note.categoryKey ?? "") ? "Invite friends to notebook" : "Friends in this notebook"
         cell.btnUpdate.removeAction(identifiedBy: UIAction.Identifier("InviteNotebookFriends"), for: .touchUpInside)
@@ -362,7 +362,7 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
             cell.btnShare.tintColor = ApplazAppearance.accent
         } else {
             //cell.btnShare.setTitle("Shared", for: .normal)
-            let globeIcon = UIImage(systemName: "globe", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular))?.withRenderingMode(.alwaysTemplate)
+            let globeIcon = UIImage(systemName: "globe.americas", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular))?.withRenderingMode(.alwaysTemplate)
             cell.btnShare.setImage(globeIcon, for: .normal)
             cell.btnShare.tintColor = ApplazAppearance.accent
         }
@@ -497,7 +497,7 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
                 alert.addAction(UIAlertAction(title: "Cancel", style: .cancel)); alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { _ in WellnessStore.shared.deleteNotebook(notebook.id) }); self?.present(alert, animated: true)
             }]
             if notebook.id != "start-here-v1" {
-                options.insert(UIAction(title: notebook.isPrivate == false ? "Make private" : "Make public", image: UIImage(systemName: notebook.isPrivate == false ? "lock" : "globe")) { [weak self] _ in
+                options.insert(UIAction(title: notebook.isPrivate == false ? "Make private" : "Make public", image: UIImage(systemName: notebook.isPrivate == false ? "lock" : "globe.americas")) { [weak self] _ in
                     let alert = UIAlertController(title: notebook.isPrivate == false ? "Make notebook private?" : "Make notebook public?", message: "Public notes can appear in Newsfeed. Meal logs, dated health reflections and AI chats stay private.", preferredStyle: .alert)
                     alert.addAction(UIAlertAction(title: "Cancel", style: .cancel)); alert.addAction(UIAlertAction(title: "Continue", style: .default) { _ in
                         guard let latest = WellnessStore.shared.notebooks.first(where: { $0.id == notebook.id }) else { return }; WellnessStore.shared.setVisibility(latest.id, isPrivate: latest.isPrivate == false)
@@ -507,12 +507,12 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
             more.menu = UIMenu(children: options)
             more.widthAnchor.constraint(equalToConstant: 44).isActive = true
             let invite = UIButton(type: .system)
-            invite.setImage(UIImage(systemName: CollaborationStore.shared.icon(kind: "health", sourceID: notebook.id), withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal); invite.tintColor = ApplazAppearance.accent
+            invite.setImage(CollaborationStore.shared.image(kind: "health", sourceID: notebook.id), for: .normal); invite.tintColor = ApplazAppearance.accent
             invite.accessibilityLabel = !CollaborationStore.shared.hasEditors(kind: "health", sourceID: notebook.id) ? "Invite friends to " + notebook.name : "Friends in " + notebook.name
             invite.widthAnchor.constraint(equalToConstant: 36).isActive = true
             invite.addAction(UIAction { [weak self] _ in guard let self else { return }; CollaborationPresentation.invite(kind: "health", sourceID: notebook.id, from: self) }, for: .touchUpInside)
             let visibility = UIButton(type: .system)
-            visibility.setImage(UIImage(systemName: notebook.isPrivate == false ? "globe" : "lock", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal)
+            visibility.setImage(UIImage(systemName: notebook.isPrivate == false ? "globe.americas" : "lock", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal)
             visibility.tintColor = ApplazAppearance.accent
             visibility.accessibilityLabel = "Visibility of " + notebook.name
             visibility.accessibilityValue = notebook.isPrivate == false ? "Public" : "Private"
