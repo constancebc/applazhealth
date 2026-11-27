@@ -26,6 +26,11 @@ const events=async uid=>(await firestore.collection('privateAccounts').doc(uid).
  const saved=await invoke('collaborationEdit','alice',{notebookID:id,note:{...first,body:'Shared edit',richHTML:'<p>Shared edit</p>'},baseUpdatedAt:first.updatedAt});
  assert.equal(saved.notebook.notes.length,2);
  assert.equal((await admin.database().ref('Users/owner/Notes/private-book/note1/Note name').get()).val(),'<p>Shared edit</p>');
+ const beforePhoto=await admin.database().ref('Users/owner/Notes/private-book').get();
+ const photoEdit=await invoke('collaborationEdit','alice',{notebookID:id,note:{...saved.notebook.notes.find(n=>n.id==='note1'),attachments:['/9j/2Q=='],isChecklist:true,items:[{id:'water',title:'Water',checkedDates:[]}]},baseUpdatedAt:saved.notebook.notes.find(n=>n.id==='note1').updatedAt});
+ const afterPhoto=await admin.database().ref('Users/owner/Notes/private-book').get();
+ await api.collaborationLegacyChanged.run({before:beforePhoto,after:afterPhoto},{params:{owner:'owner',sourceID:'private-book'},timestamp:new Date(Date.now()+1000).toISOString(),authType:'ADMIN'});
+ const preserved=(await invoke('collaborationRead','alice',{notebookID:id})).notebook.notes.find(n=>n.id==='note1');assert.equal(preserved.items[0].title,'Water');assert.equal(preserved.attachments[0],'/9j/2Q==');assert.equal(preserved.isChecklist,true);
  await assert.rejects(invoke('collaborationEdit','alice',{notebookID:id,note:{...first,body:'stale'},baseUpdatedAt:first.updatedAt}));
  await assert.rejects(invoke('collaborationDelete','alice',{notebookID:id}));
  const beforeLike=await admin.database().ref('Users/owner/Notes/private-book').get();await admin.database().ref('Users/owner/Notes/private-book/note1/likes/bob').set(true);const afterLike=await admin.database().ref('Users/owner/Notes/private-book').get();await api.collaborationLegacyChanged.run({before:beforeLike,after:afterLike},{params:{owner:'owner',sourceID:'private-book'},timestamp:new Date().toISOString(),authType:'USER',auth:{uid:'bob'}});assert.equal((await admin.database().ref('Users/owner/Notes/private-book/note1/likes/bob').get()).val(),true);

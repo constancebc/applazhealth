@@ -8,7 +8,8 @@
     "Simulator build passed",
     "18 backend policy checks passed",
     "Local Firebase emulator invitation, permissions and sync flow passed",
-    "6 native UI checks passed"
+    "7 native UI checks passed, including legacy subscription entry",
+    "Shared legacy photo and checklist preservation passed"
   ],
   "unverified": [
     "Real two-device account flow",

@@ -2,7 +2,7 @@
   "firestore": [
     {
       "database": "applaz-wellness",
-      "rules": "../../wellness/firestore.rules"
+      "rules": "firestore.rules"
     }
   ],
   "database": {

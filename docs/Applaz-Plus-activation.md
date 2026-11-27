@@ -121,7 +121,7 @@ Own saved private notes now expose Ask about this note with the same conversatio
 
 The current photo warning supersedes the earlier build-12 wording: “Your notes are still syncing. Your photo storage is full. Delete a few photos to make room for more.”
 
-Native sample previews are in DesignPreviews/collaboration-refresh. Simulator build, eighteen backend policy checks, ESLint, local Firebase emulator integration and six native UI checks passed.
+Native sample previews are in DesignPreviews/collaboration-refresh. Simulator build, eighteen backend policy checks, ESLint, local Firebase emulator integration and seven native UI checks passed, including the legacy subscription entry point.
 
 To repeat collaboration integration checks, install functions dependencies, use Node 22 and Java 21, then run from the repository root:
 
@@ -130,3 +130,5 @@ firebase emulators:exec --project demo-applaz-collab --config functions/test/emu
 ```
 
 The harness refuses non-local emulator hosts and uses fictional accounts only.
+
+Shared legacy photo mirroring also preserves checklist fields and separate attachment records; the local emulator regression check passed. Shared notebook navigation retains Back and the notebook bottom menu. Fresh invitations can reappear after an earlier decline.

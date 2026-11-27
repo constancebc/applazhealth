@@ -57,6 +57,9 @@ async function alert(recipient, id, actor, notebook, type, invitationID = "") {
     } catch (_) { /* The private in-app alert is already saved if push delivery is unavailable. */ }
   }
 }
+function legacyBody(note) {
+  return (note.richHTML || note.body) + (note.attachments || []).map(photo => "<p><img src=\"data:image/jpeg;base64," + photo + "\" /></p>").join("");
+}
 function fromLegacy(value, id, now) {
   const notes = [];
   for (const [noteID, note] of Object.entries(value)) {
@@ -192,7 +195,7 @@ exports.collaborationEdit = endpoint(async (data, uid) => {
   if (result.meta.kind === "legacy") {
     const source = admin.database().ref("Users/" + result.meta.owner + "/Notes/" + result.meta.sourceID);
     if (data.deleteNoteID) await source.child(key(data.deleteNoteID)).remove();
-    else await source.child(key(data.note.id)).update({"Title name": data.note.title, "Note name": (data.note.richHTML || data.note.body) + (data.note.attachments || []).map(photo => "<p><img src=\"data:image/jpeg;base64," + photo + "\" /></p>").join(""), Key: data.note.id});
+    else await source.child(key(data.note.id)).update({"Title name": data.note.title, "Note name": legacyBody(data.note), Key: data.note.id});
   }
   return {notebook: result.notebook, photoStorageFull: result.photoStorageFull};
 });
@@ -259,7 +262,7 @@ exports.collaborationLegacyChanged = functions.database.ref("/Users/{owner}/Note
     for (const note of fromLegacy(after, meta.sourceID, now).notes) {
       const prior = before[note.id]; const existing = notes.get(note.id);
       const differs = !prior || prior["Title name"] !== note.title || prior["Note name"] !== note.body;
-      if (differs && (!existing || now >= existing.updatedAt) && (!existing || existing.title !== note.title || (existing.richHTML || existing.body) !== note.body)) { notes.set(note.id, note); changed = true; }
+      if (differs && (!existing || now >= existing.updatedAt) && (!existing || existing.title !== note.title || legacyBody(existing) !== note.body)) { notes.set(note.id, note); changed = true; }
     }
     for (const id of Object.keys(before)) if (before[id] && typeof before[id] === "object" && before[id]["Title name"] !== undefined && !after[id]) { if (notes.delete(id)) changed = true; }
     if (!changed) return;
