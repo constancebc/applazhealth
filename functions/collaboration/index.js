@@ -155,10 +155,20 @@ exports.collaborationList = endpoint(async (_, uid) => {
   const notebooks = await Promise.all(index.docs.map(async entry => {
     const ref = shared(entry.id); const [snap, member] = await Promise.all([ref.get(), ref.collection("members").doc(uid).get()]);
     if (!snap.exists || snap.data().deleted || !member.exists) return null;
-    return {...snap.data(), role: member.data().role, snapshotChunks: undefined};
+    const members = await ref.collection("members").get();
+    return {...snap.data(), role: member.data().role, editorCount: members.docs.filter(person => person.data().role === "editor").length, snapshotChunks: undefined};
   }));
   const alerts = await account(uid).collection("collaborationAlerts").get();
   return {notebooks: notebooks.filter(Boolean), alerts: alerts.docs.map(doc => ({eventID: doc.id, ...doc.data()}))};
+});
+exports.collaborationMembers = endpoint(async (data, uid) => {
+  const ref = shared(key(data.notebookID));
+  const [notebook, member] = await Promise.all([ref.get(), ref.collection("members").doc(uid).get()]);
+  policy.requireMember(member.data());
+  if (!notebook.exists || notebook.data().deleted) throw new Error("This notebook is no longer available.");
+  const members = await ref.collection("members").get();
+  const people = await Promise.all(members.docs.map(async person => ({...await profile(person.id), role: person.data().role})));
+  return {people: people.sort((a, b) => (a.role === "owner" ? -1 : b.role === "owner" ? 1 : a.name.localeCompare(b.name)))};
 });
 exports.collaborationRead = endpoint(async (data, uid) => db().runTransaction(async tx => {
   const ref = shared(key(data.notebookID)); const [snap, member] = await Promise.all([tx.get(ref), tx.get(ref.collection("members").doc(uid))]);

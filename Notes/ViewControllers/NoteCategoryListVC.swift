@@ -324,8 +324,9 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
         
         cell.btnDelete.removeTarget(self, action: #selector(self.btnDeletePressed(_:)), for: .touchUpInside)
         cell.btnUpdate.removeTarget(self, action: #selector(self.btnUpdatePressed(_:)), for: .touchUpInside)
-        cell.btnUpdate.setImage(UIImage(systemName: "person.badge.plus"), for: .normal)
-        cell.btnUpdate.accessibilityLabel = "Invite friends to notebook"
+        cell.btnUpdate.setImage(UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal)
+        cell.btnUpdate.tintColor = ApplazAppearance.accent
+        cell.btnUpdate.accessibilityLabel = CollaborationStore.shared.match(kind: "legacy", sourceID: note.categoryKey ?? "") == nil ? "Invite friends to notebook" : "Friends in this notebook"
         cell.btnUpdate.removeAction(identifiedBy: UIAction.Identifier("InviteNotebookFriends"), for: .touchUpInside)
         cell.btnUpdate.addAction(UIAction(identifier: UIAction.Identifier("InviteNotebookFriends")) { [weak self, weak cell] _ in
             guard let self, let cell, let row = self.tblViewNoteCateoryTitle.indexPath(for: cell)?.row, let id = self.notes[row].categoryKey else { return }
@@ -475,6 +476,7 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
             var config = UIButton.Configuration.plain()
             config.title = notebook.name
             config.subtitle = (notebook.isPrivate == false ? "Public · " : "Private · ") + String(notebook.notes.count) + " notes"
+            if let count = CollaborationStore.shared.match(kind: "health", sourceID: notebook.id)?.editorCount, count > 0 { config.subtitle = String(notebook.notes.count) + " notes · " + String(count) + (count == 1 ? " friend" : " friends") }
             config.image = UIImage(systemName: notebook.kind == "text" ? "book.closed" : "checklist")
             config.imagePadding = 12; config.baseForegroundColor = .black
             config.background.backgroundColor = ApplazAppearance.surface
@@ -503,8 +505,8 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
             more.menu = UIMenu(children: options)
             more.widthAnchor.constraint(equalToConstant: 44).isActive = true
             let invite = UIButton(type: .system)
-            invite.setImage(UIImage(systemName: "person.badge.plus"), for: .normal); invite.tintColor = ApplazAppearance.accent
-            invite.accessibilityLabel = "Invite friends to " + notebook.name
+            invite.setImage(UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal); invite.tintColor = ApplazAppearance.accent
+            invite.accessibilityLabel = CollaborationStore.shared.match(kind: "health", sourceID: notebook.id) == nil ? "Invite friends to " + notebook.name : "Friends in " + notebook.name
             invite.widthAnchor.constraint(equalToConstant: 36).isActive = true
             invite.addAction(UIAction { [weak self] _ in guard let self else { return }; CollaborationPresentation.invite(kind: "health", sourceID: notebook.id, from: self) }, for: .touchUpInside)
             let row = UIStackView(arrangedSubviews: [button, invite, more]); row.spacing = 2

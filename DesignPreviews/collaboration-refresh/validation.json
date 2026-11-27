@@ -1,21 +1,22 @@
 {
   "version": "1.0.16",
-  "build": 14,
+  "build": 15,
   "nativeSimulatorCaptures": true,
   "samplePeople": true,
+  "appleTrialPreview": "Apple local StoreKit test configuration, not an App Store Connect change",
   "realInvitationsSent": false,
   "checks": [
     "Simulator build passed",
     "18 backend policy checks passed",
-    "Local Firebase emulator invitation, permissions and sync flow passed",
-    "7 native UI checks passed, including legacy subscription entry",
-    "Shared legacy photo and checklist preservation passed"
+    "ESLint passed",
+    "Local Firebase editing-list privacy and accepted friend counts passed",
+    "Native notebook to editing-list navigation passed",
+    "One-week trial and localized $2.99 weekly label passed with local Apple product 299",
+    "Tapping the real subscription button created a local Apple StoreKit transaction, no real charge"
   ],
   "unverified": [
     "Real two-device account flow",
-    "Real Apple purchase and restore",
+    "Production Apple purchase and restore",
     "OS push delivery"
-  ],
-  "appleProduct": "299",
-  "introductoryOfferReturnedInTestedStorefront": false
+  ]
 }

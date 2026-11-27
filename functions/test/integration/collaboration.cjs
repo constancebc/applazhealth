@@ -19,7 +19,10 @@ const events=async uid=>(await firestore.collection('privateAccounts').doc(uid).
  const privateRead=await fetch('http://'+process.env.FIRESTORE_EMULATOR_HOST+'/v1/projects/demo-applaz-collab/databases/applaz-wellness/documents/privateAccounts/alice/collaborationAlerts/'+invitation);assert.equal(privateRead.status,403);
  await assert.rejects(invoke('collaborationRead','alice',{notebookID:id}));
  await assert.rejects(invoke('collaborationRespond','bob',{invitationID:invitation,accept:true}));
+ await assert.rejects(invoke('collaborationMembers','bob',{notebookID:id}));
  await invoke('collaborationRespond','alice',{invitationID:invitation,accept:true});
+ const editing=await invoke('collaborationMembers','alice',{notebookID:id});assert.deepEqual(editing.people.map(p=>p.role),['owner','editor']);assert.equal(editing.people[1].name,'alice');
+ assert.equal((await invoke('collaborationList','owner',{})).notebooks[0].editorCount,1);
  assert.equal((await invoke('collaborationList','alice',{})).notebooks[0].role,'editor');
  assert.equal((await events('owner'))[0].data().type,'notebookAccepted');
  const loaded=await invoke('collaborationRead','alice',{notebookID:id});const first=loaded.notebook.notes.find(n=>n.id==='note1');

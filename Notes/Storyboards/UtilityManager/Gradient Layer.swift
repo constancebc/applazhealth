@@ -596,8 +596,10 @@ final class NewNotebookViewController: UIViewController {
             control.heightAnchor.constraint(equalToConstant: 42).isActive = true
             return row
         }
-        inviteFriendsButton.setTitle("Invite friends", for: .normal)
-        inviteFriendsButton.setImage(UIImage(systemName: "person.badge.plus"), for: .normal)
+        var friendsConfig = UIButton.Configuration.plain()
+        friendsConfig.title = "Invite friends"; friendsConfig.image = UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)); friendsConfig.imagePadding = 8
+        friendsConfig.baseForegroundColor = ApplazAppearance.accent
+        inviteFriendsButton.configuration = friendsConfig
         inviteFriendsButton.tintColor = ApplazAppearance.accent
         inviteFriendsButton.titleLabel?.font = ApplazAppearance.font(15)
         inviteFriendsButton.accessibilityIdentifier = "NewNotebookFriends"

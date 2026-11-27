@@ -17,6 +17,54 @@ struct CollaborativeNotebook: Decodable, Identifiable {
     var kind: String
     var sourceID: String
     var role: String
+    var editorCount: Int? = nil
+}
+struct CollaborationMember: Decodable, Identifiable {
+    var id: String
+    var name: String
+    var photo: String
+    var role: String
+}
+struct CollaborationMembersView: View {
+    var notebookID: String
+    var notebookName: String
+    var sampleMembers: [CollaborationMember]? = nil
+    @State private var members: [CollaborationMember] = []
+    @State private var error: String?
+    @State private var inviting = false
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        ZStack { WellnessBackground(); VStack(spacing: 20) {
+            HStack { Text("Friends in this notebook").font(.system(size: 17, weight: .medium)); Spacer(); Button("Done") { dismiss() } }
+            Text(notebookName).font(.system(size: 15)).foregroundColor(.black.opacity(0.6)).frame(maxWidth: .infinity, alignment: .leading)
+            ScrollView { VStack(spacing: 0) {
+                ForEach(members) { person in
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.crop.circle").font(.system(size: 27, weight: .light)).foregroundColor(.applazAccent)
+                        Text("@" + person.name).font(.system(size: 16)); Spacer()
+                        Text(person.role == "owner" ? "Owner" : "Can edit").font(.system(size: 12)).foregroundColor(.black.opacity(0.55))
+                    }.padding(.vertical, 15)
+                    Divider().opacity(0.3)
+                }
+                if members.isEmpty && error == nil { ProgressView().padding() }
+                if let error { Text(error).font(.footnote).padding() }
+            }.padding(.horizontal, 16).background(Color.white.opacity(0.55)).clipShape(RoundedRectangle(cornerRadius: 18)) }
+            Button { inviting = true } label: { Label("Invite friends", systemImage: "person.2").font(.system(size: 16)).frame(maxWidth: .infinity).padding(14).background(Color.white.opacity(0.65)).clipShape(Capsule()).overlay(Capsule().stroke(Color.applazAccent.opacity(0.15))) }
+                .accessibilityIdentifier("InviteMoreNotebookFriends")
+        }.padding(22) }.foregroundColor(.black).tint(.applazAccent)
+        .task { await load() }
+        .sheet(isPresented: $inviting, onDismiss: { Task { await load() } }) {
+            CollaborationPeoplePicker(done: { people in inviting = false; guard !people.isEmpty, sampleMembers == nil else { return }; Task { do { _ = try await CollaborationStore.shared.invite(kind: "health", sourceID: "", people: people, notebookID: notebookID) } catch { self.error = error.localizedDescription } } }, cancel: { inviting = false })
+        }
+    }
+    private func load() async {
+        if let sampleMembers { members = sampleMembers; return }
+        #if DEBUG
+        if let samples = CollaborationStore.shared.previewMembers(notebookID) { members = samples; return }
+        #endif
+        do { let result = try await WellnessAPI.call("collaborationMembers", ["notebookID": notebookID]); members = try JSONDecoder().decode([CollaborationMember].self, from: JSONSerialization.data(withJSONObject: result["people"] ?? [])); error = nil }
+        catch { self.error = error.localizedDescription }
+    }
 }
 @MainActor final class CollaborationStore: ObservableObject {
     static let shared = CollaborationStore()
@@ -32,6 +80,9 @@ struct CollaborativeNotebook: Decodable, Identifiable {
         } }
     }
     func refresh() async {
+        #if DEBUG
+        if Auth.auth().currentUser == nil, ProcessInfo.processInfo.environment["APPLAZ_WELLNESS_PREVIEW"] == "collaboration-home-preview" { return }
+        #endif
         guard let uid = Auth.auth().currentUser?.uid else { notebooks = []; ApplazActivityInbox.shared.setCollaborationEvents([]); return }
         guard !refreshing else { return }; refreshing = true; defer { refreshing = false }
         do {
@@ -51,7 +102,22 @@ struct CollaborativeNotebook: Decodable, Identifiable {
             }
         } catch { /* Retain the last visible list while offline. */ }
     }
-    func match(kind: String, sourceID: String) -> CollaborativeNotebook? { notebooks.first { $0.kind == kind && $0.sourceID == sourceID && $0.owner == Auth.auth().currentUser?.uid } }
+    #if DEBUG
+    private var sampleEditingLists: [String: [CollaborationMember]] = [:]
+    func previewMembers(_ id: String) -> [CollaborationMember]? {
+        guard Auth.auth().currentUser == nil, ProcessInfo.processInfo.environment["APPLAZ_WELLNESS_PREVIEW"] == "collaboration-home-preview" else { return nil }; return sampleEditingLists[id]
+    }
+    func loadPreview(_ values: [CollaborativeNotebook], members: [String: [CollaborationMember]]) {
+        guard Auth.auth().currentUser == nil, ProcessInfo.processInfo.environment["APPLAZ_WELLNESS_PREVIEW"] == "collaboration-home-preview" else { return }
+        notebooks = values; sampleEditingLists = members
+    }
+    #endif
+    func match(kind: String, sourceID: String) -> CollaborativeNotebook? {
+        #if DEBUG
+        if Auth.auth().currentUser == nil, ProcessInfo.processInfo.environment["APPLAZ_WELLNESS_PREVIEW"] == "collaboration-home-preview" { return notebooks.first { $0.kind == kind && $0.sourceID == sourceID } }
+        #endif
+        return notebooks.first { $0.kind == kind && $0.sourceID == sourceID && $0.owner == Auth.auth().currentUser?.uid }
+    }
     var sharedWithMe: [CollaborativeNotebook] { notebooks.filter { $0.role != "owner" } }
     func invite(kind: String, sourceID: String, people: [CollaborationPerson], notebookID: String? = nil) async throws -> String {
         var data: [String: Any] = ["kind": kind, "sourceID": sourceID, "recipients": people.map(\.id)]
@@ -89,6 +155,13 @@ struct CollaborativeNotebook: Decodable, Identifiable {
         controller.present(view, animated: true)
     }
     static func invite(kind: String, sourceID: String, notebookID: String? = nil, from controller: UIViewController) {
+        if let shared = notebookID.flatMap({ id in CollaborationStore.shared.notebooks.first { $0.id == id } }) ?? CollaborationStore.shared.match(kind: kind, sourceID: sourceID) {
+            let host = WellnessHostingController(rootView: CollaborationMembersView(notebookID: shared.id, notebookName: shared.name))
+            host.modalPresentationStyle = .pageSheet
+            host.sheetPresentationController?.detents = [.medium(), .large()]
+            controller.present(host, animated: true)
+            return
+        }
         choose(from: controller) { [weak controller] people in
             guard !people.isEmpty else { return }
             Task { do {
@@ -182,10 +255,10 @@ struct CollaborativeNotebookView: View {
             .navigationTitle(notebook?.name ?? "").navigationBarTitleDisplayMode(.inline).navigationBarHidden(false)
             .toolbar {
                 if let close { ToolbarItem(placement: .navigationBarLeading) { Button(action: close) { Image(systemName: "chevron.left") }.accessibilityLabel("Back") } }
-                ToolbarItem(placement: .navigationBarTrailing) { Button { inviting = true } label: { Image(systemName: "person.badge.plus") }.accessibilityLabel("Invite friends") }
+                ToolbarItem(placement: .navigationBarTrailing) { Button { inviting = true } label: { Image(systemName: "person.2") }.accessibilityLabel("Invite friends") }
                 if role == "owner" { ToolbarItem(placement: .navigationBarTrailing) { Menu { Button("Delete notebook", role: .destructive) { deleting = true } } label: { Image(systemName: "ellipsis") } } }
             }
-            .sheet(isPresented: $inviting) { CollaborationPeoplePicker(done: { people in inviting = false; Task { do { _ = try await collaboration.invite(kind: "health", sourceID: "", people: people, notebookID: notebookID) } catch { self.error = error.localizedDescription } } }, cancel: { inviting = false }) }
+            .sheet(isPresented: $inviting) { CollaborationMembersView(notebookID: notebookID, notebookName: notebook?.name ?? "Notebook") }
             .alert("Delete notebook?", isPresented: $deleting) { Button("Delete", role: .destructive) { Task { do { _ = try await WellnessAPI.call("collaborationDelete", ["notebookID": notebookID]); await collaboration.refresh(); await WellnessStore.shared.sync(); if let close { close() } else { dismiss() } } catch { self.error = error.localizedDescription } } }; Button("Cancel", role: .cancel) {} }
             .task {
                 repeat { await load(); do { try await Task.sleep(nanoseconds: 5_000_000_000) } catch { return } } while !Task.isCancelled

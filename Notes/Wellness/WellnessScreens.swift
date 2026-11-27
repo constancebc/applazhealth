@@ -58,7 +58,7 @@ struct SubscriptionWelcomeView: View {
                         Spacer()
                         Color.clear.frame(width: 44, height: 44)
                     }
-                    SubscriptionNotebookPreview().frame(height: 220).accessibilityHidden(true)
+                    SubscriptionNotebookPreview().frame(height: 248).accessibilityHidden(true)
                     VStack(spacing: 6) {
                         Text("Reach your goals.").font(.system(size: 26, weight: .semibold))
                         Text("Your everyday plans, with a little more insight.")
@@ -151,44 +151,53 @@ struct SubscriptionWelcomeView: View {
 }
 
 private struct SubscriptionNotebookPreview: View {
+    private let bars: [CGFloat] = [0.35, 0.58, 0.44, 0.72, 0.62, 0.88, 1]
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 26).fill(Color.white.opacity(0.28))
-                .frame(width: 210, height: 192).rotationEffect(.degrees(-12)).offset(x: -24, y: 2)
-            HStack(spacing: 0) {
-                VStack(spacing: 13) {
-                    ForEach(0..<6, id: \.self) { _ in Capsule().fill(Color.applazAccent.opacity(0.22)).frame(width: 18, height: 4) }
-                }.frame(width: 30)
-                VStack(alignment: .leading, spacing: 13) {
-                    HStack { Image(systemName: "book.closed"); Text("Daily wellness").fontWeight(.medium) }.font(.system(size: 15))
-                    Rectangle().fill(Color.applazAccent.opacity(0.1)).frame(height: 1)
-                    row("Lemon water", checked: true)
-                    row("A little movement", checked: true)
-                    row("Time to reflect", checked: false)
-                    HStack { Text("Small habits. Your pace.").font(.system(size: 11)); Spacer(); Image(systemName: "sparkle").foregroundColor(.applazAccent) }
-                }.padding(.vertical, 18).padding(.trailing, 18)
-            }.frame(width: 260).background(Color.white.opacity(0.8))
-                .clipShape(RoundedRectangle(cornerRadius: 19))
-                .overlay(RoundedRectangle(cornerRadius: 19).stroke(Color.applazAccent.opacity(0.15)))
-                .shadow(color: Color.applazAccent.opacity(0.1), radius: 14, y: 7)
-                .rotationEffect(.degrees(-5)).offset(x: -16, y: -10)
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles").foregroundColor(.applazAccent)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("A little insight").font(.system(size: 13, weight: .medium))
-                    Text("Find your patterns").font(.system(size: 11)).foregroundColor(.black.opacity(0.6))
+        VStack(spacing: 16) {
+            Text("A LITTLE SPACE FOR BIG GOALS").font(.system(size: 10, weight: .medium)).tracking(2).foregroundColor(.black.opacity(0.5))
+            ZStack {
+                Ellipse().fill(Color(red: 0.77, green: 0.74, blue: 1).opacity(0.35)).frame(width: 280, height: 140).blur(radius: 28).offset(x: -22, y: 25)
+                Ellipse().fill(Color(red: 1, green: 0.81, blue: 0.69).opacity(0.45)).frame(width: 180, height: 140).blur(radius: 28).offset(x: 90, y: -15)
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack { Text("My day").font(.system(size: 16, weight: .semibold)); Spacer(); Image(systemName: "sun.max").font(.system(size: 14, weight: .light)).foregroundColor(.applazAccent) }
+                        Text("Small habits, your pace.").font(.system(size: 9)).foregroundColor(.black.opacity(0.5))
+                        Divider().opacity(0.35)
+                        habit("Lemon water", done: true)
+                        habit("A little movement", done: true)
+                        habit("Time to reflect", done: false)
+                        Spacer(minLength: 0)
+                        HStack(spacing: 4) { Circle().fill(Color.applazAccent.opacity(0.65)).frame(width: 4, height: 4); Text("A fresh start, every day").font(.system(size: 8)).foregroundColor(.black.opacity(0.5)) }
+                    }.padding(16).frame(width: 155, height: 185)
+                    LinearGradient(colors: [.black.opacity(0.015), .black.opacity(0.07), .white.opacity(0.6)], startPoint: .leading, endPoint: .trailing).frame(width: 6, height: 185)
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack { Text("My progress").font(.system(size: 14, weight: .medium)); Spacer(); Image(systemName: "sparkle").font(.system(size: 17, weight: .light)).foregroundColor(.applazAccent) }
+                        Text("Look how far you’ve come.").font(.system(size: 9)).foregroundColor(.black.opacity(0.5))
+                        HStack(alignment: .bottom, spacing: 5) {
+                            ForEach(Array(bars.enumerated()), id: \.offset) { index, value in
+                                VStack(spacing: 5) {
+                                    RoundedRectangle(cornerRadius: 3).fill(LinearGradient(colors: [Color(red: 0.64, green: 0.60, blue: 0.91).opacity(index == 6 ? 0.95 : 0.5), Color(red: 0.79, green: 0.77, blue: 0.96).opacity(0.4)], startPoint: .top, endPoint: .bottom)).frame(width: 10, height: 54 * value)
+                                    Text(["M", "T", "W", "T", "F", "S", "S"][index]).font(.system(size: 6)).foregroundColor(.black.opacity(0.4))
+                                }
+                            }
+                        }.frame(height: 72, alignment: .bottom)
+                        Text("Your patterns, clearer.").font(.system(size: 9)).foregroundColor(.black.opacity(0.55))
+                        HStack(spacing: 5) { Image(systemName: "sparkles").font(.system(size: 10)); Text("A little insight").font(.system(size: 9, weight: .medium)) }.foregroundColor(.applazAccent).padding(.top, 2)
+                    }.padding(14).frame(width: 150, height: 185)
                 }
-                Image(systemName: "chart.xyaxis.line").font(.system(size: 21, weight: .light)).foregroundColor(.applazAccent.opacity(0.7))
-            }.padding(12).background(Color.white.opacity(0.94)).clipShape(RoundedRectangle(cornerRadius: 15))
-                .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.applazAccent.opacity(0.12)))
-                .shadow(color: Color.applazAccent.opacity(0.08), radius: 10, y: 4)
-                .rotationEffect(.degrees(5)).offset(x: 54, y: 80)
+                .background(LinearGradient(colors: [.white.opacity(0.97), Color(red: 0.99, green: 0.98, blue: 1).opacity(0.95)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.9), lineWidth: 1))
+                .shadow(color: Color.applazAccent.opacity(0.12), radius: 18, x: 0, y: 12)
+                Image(systemName: "sparkle").font(.system(size: 24, weight: .ultraLight)).foregroundColor(.applazAccent.opacity(0.4)).offset(x: -160, y: -83)
+                Image(systemName: "sparkle").font(.system(size: 14, weight: .ultraLight)).foregroundColor(.applazAccent.opacity(0.3)).offset(x: 164, y: 77)
+            }.frame(height: 199)
         }.foregroundColor(.black)
     }
-    private func row(_ title: String, checked: Bool) -> some View {
-        HStack(spacing: 9) {
-            Image(systemName: checked ? "checkmark.square.fill" : "square").foregroundColor(.applazAccent.opacity(checked ? 0.8 : 0.45))
-            Text(title).font(.system(size: 13)).foregroundColor(.black.opacity(checked ? 0.55 : 0.85))
+    private func habit(_ title: String, done: Bool) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: done ? "checkmark.square.fill" : "square").font(.system(size: 13, weight: .light)).foregroundColor(.applazAccent.opacity(done ? 0.8 : 0.35))
+            Text(title).font(.system(size: 10)).foregroundColor(.black.opacity(done ? 0.55 : 0.85))
         }
     }
 }
@@ -248,7 +257,7 @@ struct WellnessLibraryView: View {
                     NavigationLink(destination: notebookDestination(notebook.id)) {
                         HStack { Image(systemName: notebook.kind == "text" ? "book.closed" : "checklist").foregroundColor(.applazAccent); VStack(alignment: .leading, spacing: 4) { Text(notebook.name).font(.headline); Text("\(notebook.isPrivate == false ? "Public" : "Private") · \(notebook.notes.count) \(notebook.notes.count == 1 ? "note" : "notes")").font(.caption).foregroundColor(.black.opacity(0.55)) }; Spacer() }
                     }.buttonStyle(.plain)
-                    Button { inviteID = notebook.id } label: { Image(systemName: "person.badge.plus").font(.system(size: 20, weight: .regular)).frame(width: 36, height: 44) }.accessibilityLabel("Invite friends to " + notebook.name)
+                    Button { inviteID = notebook.id } label: { Image(systemName: "person.2").font(.system(size: 18, weight: .regular)).frame(width: 36, height: 44) }.accessibilityLabel(collaboration.match(kind: "health", sourceID: notebook.id) == nil ? "Invite friends to " + notebook.name : "Friends in " + notebook.name)
                 }.wellnessCard() }
                 ForEach(collaboration.sharedWithMe) { shared in
                     NavigationLink(destination: CollaborativeNotebookView(notebookID: shared.id)) {
@@ -264,7 +273,8 @@ struct WellnessLibraryView: View {
         }}.foregroundColor(.black).tint(.applazAccent).navigationBarHidden(true) }
         .task { await collaboration.refresh() }
         .sheet(isPresented: Binding(get: { inviteID != nil }, set: { if !$0 { inviteID = nil } })) {
-            CollaborationPeoplePicker(done: { people in let id = inviteID; inviteID = nil; guard let id else { return }; Task { do { _ = try await collaboration.invite(kind: "health", sourceID: id, people: people) } catch { invitationError = error.localizedDescription } } }, cancel: { inviteID = nil })
+            if let id = inviteID, let shared = collaboration.match(kind: "health", sourceID: id) { CollaborationMembersView(notebookID: shared.id, notebookName: shared.name) }
+            else { CollaborationPeoplePicker(done: { people in let id = inviteID; inviteID = nil; guard let id else { return }; Task { do { _ = try await collaboration.invite(kind: "health", sourceID: id, people: people) } catch { invitationError = error.localizedDescription } } }, cancel: { inviteID = nil }) }
         }
         .alert("Couldn’t send invitations", isPresented: Binding(get: { invitationError != nil }, set: { if !$0 { invitationError = nil } })) { Button("OK", role: .cancel) {} } message: { Text(invitationError ?? "") }
         .navigationViewStyle(.stack).confirmationDialog("Copy guest notebooks and meals from this device into your signed-in account?", isPresented: $importGuest, titleVisibility: .visible) { Button("Copy my guest work") { store.importGuestWork() } }.sheet(isPresented: $create) { CreateWellnessNotebookView().modifier(WellnessHalfSheet()) }.sheet(isPresented: $chat) { NavigationView { SavedAIChatsView() } }

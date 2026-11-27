@@ -132,3 +132,14 @@ firebase emulators:exec --project demo-applaz-collab --config functions/test/emu
 The harness refuses non-local emulator hosts and uses fictional accounts only.
 
 Shared legacy photo mirroring also preserves checklist fields and separate attachment records; the local emulator regression check passed. Shared notebook navigation retains Back and the notebook bottom menu. Fresh invitations can reappear after an earlier decline.
+
+
+## Editing list and purchase button — build 1.0.16 (15)
+
+Notebook collaboration uses the same outlined person.2 symbol family as the social controls, with an 18-point row icon and proper spacing in New Notebook. Once a notebook is shared, this button opens Friends in this notebook. The list shows the owner and accepted editors and includes Invite friends. Notebook rows show the accepted friend count. The private collaborationMembers endpoint checks membership before returning the list; pending and uninvited users cannot read it. Owner-only notebook deletion is unchanged.
+
+The subscription hero is an open notebook spread with a daily checklist, a weekly progress illustration, soft background light and small AI stars, replacing the stacked-card artwork. The trial label is 1 week free, then the Apple-localized price per week for eligible introductory offers; the default US plan is $2.99 weekly. Returning or ineligible customers receive the price Apple actually offers. The purchase button no longer waits for wellnessStatus or requires serviceReady before calling StoreKit purchase. Apple transaction verification and account entitlement syncing still run after purchase. This fixes the app-side blocking condition without fabricating Apple trial eligibility or changing App Store Connect.
+
+The simulator build, eighteen policy checks, ESLint and local Firebase invitation/member-list integration passed. The editing-list endpoint and accepted friend counts are deployed to applaz-32772. Preview helpers are restricted to Debug, an explicit local preview environment and a signed-out account; they cannot grant production access.
+
+The accepted editing-list navigation and the subscription trial/purchase checks passed in the native simulator. Apple local StoreKit testing used product 299, a one-week free introductory offer and a $2.99 weekly price; tapping the real app button created the expected local StoreKit transaction with no charge. This is local purchase verification, not a claim that a production Apple Account was charged or that an App Store Connect offer was changed.

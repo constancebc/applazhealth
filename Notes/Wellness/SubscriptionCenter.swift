@@ -49,7 +49,7 @@ import Security
         loadingProduct = true
         defer { loadingProduct = false }
         message = nil
-        serviceReady = (try? await WellnessAPI.call("wellnessStatus", [:])["ready"] as? Bool) == true
+        Task { serviceReady = (try? await WellnessAPI.call("wellnessStatus", [:])["ready"] as? Bool) == true }
         do {
             product = try await Product.products(for: [Self.productID]).first
             guard let loaded = product else {
@@ -72,7 +72,6 @@ import Security
                 eligibleTrial = false
                 trialUnavailableReason = "Apple isn’t currently offering a free trial for this plan."
             }
-            if !serviceReady { message = "We couldn’t connect to your membership. Tap Continue to try again." }
         } catch {
             message = "Apple couldn’t load this subscription. Check your connection and tap Continue to try again."
         }
@@ -82,8 +81,8 @@ import Security
         guard !busy, !loadingProduct else { return false }
         busy = true; message = nil
         defer { busy = false }
-        if product == nil || !serviceReady { await loadProduct() }
-        guard serviceReady, let product else {
+        if product == nil { await loadProduct() }
+        guard let product else {
             if message == nil { message = "We couldn’t connect to Apple. Please try again." }
             return false
         }
