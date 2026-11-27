@@ -159,3 +159,14 @@ The build-16 native preview was visually checked. Its automated tap test stalled
 ## Notebook icon refinement — build 1.0.16 (17)
 
 The grid globe is replaced by the outlined continental globe. Invitations use a custom thin-line person with a plain plus, with no badge ring or envelope. Accepted collaborators still use person.2; private notebooks retain the lock. Icon changes apply to the main notebook list, the notebook library, creation and notebook-selection menus. Existing visibility and invitation handlers are unchanged. Simulator compilation passed.
+
+
+## Checkout presentation and saved-note ownership — build 1.0.16 (18)
+
+The subscription action is no longer disabled or silently ignored while product metadata or introductory-offer eligibility is loading. Concurrent product loads share one request, product metadata has a retryable twenty-second network deadline, and trial eligibility resolves separately. The network deadline does not cancel an Apple payment confirmation or limit customer usage. On iOS 17 and later, checkout explicitly uses the window scene containing the button; iOS 15 and 16 retain the standard StoreKit purchase API. The complete visible capsule is included in the tap region. Apple verification and backend entitlement syncing remain after confirmation.
+
+Opening an own saved regular note now prioritizes the authenticated Firebase account rather than overriding it with a cached social-profile identifier. The saved-note viewer already includes Ask about this note for own public/private notes with the same regular-note conversation key as the editor. Collaboration endpoints, invitations, roles and owner-only deletion are unchanged.
+
+The final simulator compilation passed. Visible Apple confirmation-dialog checks on the existing and clean simulator did not reach the button tap because simulator automation stalled; they are not reported as passing. Earlier tests with disabled Apple dialogs do not prove that the payment sheet appeared. No real TestFlight purchase or App Store Connect offer change has been claimed.
+
+Standalone subscription entry points now present their screen when no UIKit navigation controller is available. Manage Subscription also selects a foreground key-window scene and reports a missing presentation context instead of returning silently. The final build including these entry-point changes passed. Actual Apple checkout remains unverified on a physical iPhone/TestFlight; the installed phone app must receive build 18 to include these changes.

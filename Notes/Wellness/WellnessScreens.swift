@@ -43,6 +43,7 @@ struct AIThinkingOrb: View {
 struct SubscriptionWelcomeView: View {
     @ObservedObject private var subscription = SubscriptionCenter.shared
     @State private var showPurchaseMessage = false
+    @State private var checkoutScene: UIWindowScene?
     var onClose: () -> Void
     var onPurchased: () -> Void
     var body: some View {
@@ -102,7 +103,7 @@ struct SubscriptionWelcomeView: View {
             }
             Button {
                 Task {
-                    if await subscription.purchase() {
+                    if await subscription.purchase(in: checkoutScene) {
                         onPurchased()
                         if Auth.auth().currentUser == nil { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { WellnessPresentation.signInAfterPurchase() } }
                     } else if subscription.message != nil { showPurchaseMessage = true }
@@ -114,7 +115,8 @@ struct SubscriptionWelcomeView: View {
                 }
             }.buttonStyle(ApplazBubbleButtonStyle())
                 .accessibilityIdentifier("SubscriptionPurchase")
-                .disabled(subscription.busy || subscription.loadingProduct)
+                .disabled(subscription.busy)
+                .background(SubscriptionCheckoutAnchor(onScene: { checkoutScene = $0 }).allowsHitTesting(false))
             if let message = subscription.message {
                 Text(message).font(.system(size: 12)).foregroundColor(.black.opacity(0.65)).multilineTextAlignment(.center)
                     .accessibilityIdentifier("SubscriptionStatus")
@@ -147,6 +149,22 @@ struct SubscriptionWelcomeView: View {
         return subscription.eligibleTrial
             ? "No charge today. After your free week, renews at \(subscription.price)/week unless canceled at least 24 hours before renewal. Manage or cancel in Apple Account settings. Weekly AI credits included."
             : "Renews at \(subscription.price)/week unless canceled at least 24 hours before renewal. Manage or cancel in Apple Account settings. Weekly AI credits included."
+    }
+}
+
+private struct SubscriptionCheckoutAnchor: UIViewRepresentable {
+    var onScene: (UIWindowScene?) -> Void
+    func makeUIView(context: Context) -> CheckoutWindowView {
+        let view = CheckoutWindowView(); view.isUserInteractionEnabled = false; view.onScene = onScene; return view
+    }
+    func updateUIView(_ view: CheckoutWindowView, context: Context) { view.onScene = onScene }
+}
+private final class CheckoutWindowView: UIView {
+    var onScene: ((UIWindowScene?) -> Void)?
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        let scene = window?.windowScene
+        DispatchQueue.main.async { [weak self] in self?.onScene?(scene) }
     }
 }
 

@@ -101,8 +101,12 @@ final class WellnessHostingController<Content: View>: UIHostingController<Conten
         controller.present(host, animated: true)
     }
     static func subscription(from controller: UIViewController) {
-        let host = WellnessHostingController(rootView: NavigationView { SubscriptionSettingsView(close: { [weak controller] in controller?.navigationController?.popViewController(animated: true) }).navigationBarHidden(true) }.navigationViewStyle(.stack))
-        controller.navigationController?.pushViewController(host, animated: true)
+        let host = WellnessHostingController(rootView: NavigationView { SubscriptionSettingsView(close: { [weak controller] in
+            if let navigation = controller?.navigationController { navigation.popViewController(animated: true) }
+            else { controller?.dismiss(animated: true) }
+        }).navigationBarHidden(true) }.navigationViewStyle(.stack))
+        if let navigation = controller.navigationController { navigation.pushViewController(host, animated: true) }
+        else { host.modalPresentationStyle = .pageSheet; controller.present(host, animated: true) }
     }
 }
 
@@ -186,6 +190,7 @@ struct ApplazBubbleButtonStyle: ButtonStyle {
             .background(Color.white.opacity(configuration.isPressed ? 0.38 : 0.58))
             .clipShape(Capsule())
             .overlay(Capsule().stroke(Color.applazAccent.opacity(0.16)))
+            .contentShape(Capsule())
     }
 }
 

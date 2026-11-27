@@ -4,6 +4,16 @@ import StoreKit
 import FirebaseAuth
 import Security
 
+@MainActor private final class AppleProductCompletion {
+    var continuation: CheckedContinuation<Product?, Error>?
+    var timeout: Task<Void, Never>?
+    init(_ continuation: CheckedContinuation<Product?, Error>) { self.continuation = continuation }
+    func finish(_ result: Result<Product?, Error>) {
+        guard let continuation else { return }
+        self.continuation = nil; timeout?.cancel(); timeout = nil
+        continuation.resume(with: result)
+    }
+}
 @MainActor final class SubscriptionCenter: ObservableObject {
     static let shared = SubscriptionCenter()
     static let productID = "299"
@@ -24,6 +34,8 @@ import Security
     private var updates: Task<Void, Never>?
     private var authHandle: AuthStateDidChangeListenerHandle?
     private var signedTransaction: String?
+    private var productLoad: Task<Void, Never>?
+    private var trialLoad: Task<Void, Never>?
     init() {
         foreground = NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification).sink { [weak self] _ in
             Task { @MainActor in await self?.loadProduct(); await self?.refresh() }
@@ -45,15 +57,33 @@ import Security
         Task { await loadProduct(); await refresh() }
     }
     func loadProduct() async {
-        guard !loadingProduct else { return }
+        if let productLoad { await productLoad.value; return }
         loadingProduct = true
-        defer { loadingProduct = false }
-        message = nil
+        let task = Task<Void, Never> { [weak self] in await self?.fetchProduct() }
+        productLoad = task
+        await task.value
+        productLoad = nil; loadingProduct = false
+    }
+    private func requestAppleProduct() async throws -> Product? {
+        try await withCheckedThrowingContinuation { continuation in
+            let completion = AppleProductCompletion(continuation)
+            let request = Task { @MainActor in
+                do { completion.finish(.success(try await Product.products(for: [Self.productID]).first)) }
+                catch { completion.finish(.failure(error)) }
+            }
+            completion.timeout = Task { @MainActor in
+                do { try await Task.sleep(nanoseconds: 20_000_000_000) } catch { return }
+                request.cancel()
+                completion.finish(.failure(WellnessAPI.failure("Apple is taking longer to respond. Tap Continue to try again.")))
+            }
+        }
+    }
+    private func fetchProduct() async {
+        if !busy { message = nil }
         Task { serviceReady = (try? await WellnessAPI.call("wellnessStatus", [:])["ready"] as? Bool) == true }
         do {
-            product = try await Product.products(for: [Self.productID]).first
-            guard let loaded = product else {
-                eligibleTrial = false
+            guard let loaded = try await requestAppleProduct() else {
+                product = nil; eligibleTrial = false
                 message = "Apple couldn’t load this subscription. Tap Continue to try again."
                 return
             }
@@ -63,22 +93,24 @@ import Security
                 message = "Apple returned a different subscription plan. Please try again later."
                 return
             }
+            product = loaded
+            trialLoad?.cancel(); eligibleTrial = false; trialUnavailableReason = nil
             if let subscription = loaded.subscription, let offer = subscription.introductoryOffer {
                 let oneWeek = (offer.period.unit == .week && offer.period.value == 1) || (offer.period.unit == .day && offer.period.value == 7)
-                let eligible = await subscription.isEligibleForIntroOffer
-                eligibleTrial = offer.paymentMode == .freeTrial && oneWeek && eligible
-                trialUnavailableReason = eligibleTrial ? nil : (offer.paymentMode == .freeTrial && oneWeek ? "A free trial isn’t available for this Apple Account." : "Apple isn’t currently offering a one-week free trial for this plan.")
-            } else {
-                eligibleTrial = false
-                trialUnavailableReason = "Apple isn’t currently offering a free trial for this plan."
-            }
-        } catch {
-            message = "Apple couldn’t load this subscription. Check your connection and tap Continue to try again."
-        }
+                if offer.paymentMode == .freeTrial && oneWeek {
+                    trialLoad = Task { @MainActor [weak self] in
+                        let eligible = await subscription.isEligibleForIntroOffer
+                        guard !Task.isCancelled else { return }
+                        self?.eligibleTrial = eligible
+                        self?.trialUnavailableReason = eligible ? nil : "A free trial isn’t available for this Apple Account."
+                    }
+                } else { trialUnavailableReason = "Apple isn’t currently offering a one-week free trial for this plan." }
+            } else { trialUnavailableReason = "Apple isn’t currently offering a free trial for this plan." }
+        } catch { message = error.localizedDescription }
     }
     var price: String { product?.displayPrice ?? "$2.99" }
-    func purchase() async -> Bool {
-        guard !busy, !loadingProduct else { return false }
+    func purchase(in checkoutScene: UIWindowScene? = nil) async -> Bool {
+        guard !busy else { message = "Apple is already processing your request."; return false }
         busy = true; message = nil
         defer { busy = false }
         if product == nil { await loadProduct() }
@@ -87,7 +119,13 @@ import Security
             return false
         }
         do {
-            switch try await product.purchase() {
+            let result: Product.PurchaseResult
+            if #available(iOS 17.0, *) {
+                let scene = checkoutScene?.activationState == .foregroundActive ? checkoutScene : UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first { $0.activationState == .foregroundActive && $0.windows.contains { $0.isKeyWindow } }
+                guard let scene else { throw WellnessAPI.failure("Reopen this screen so Apple can display checkout, then try again.") }
+                result = try await product.purchase(confirmIn: scene)
+            } else { result = try await product.purchase() }
+            switch result {
             case .success(let result):
                 guard case .verified(let transaction) = result else { throw WellnessAPI.failure("Apple couldn’t verify this purchase.") }
                 await accept(transaction, signed: result.jwsRepresentation)
@@ -95,7 +133,7 @@ import Security
                 return Auth.auth().currentUser == nil || capacity > 0
             case .pending: message = "Your purchase is pending approval. Credits unlock after it is verified."; return false
             case .userCancelled: return false
-            @unknown default: return false
+            @unknown default: message = "Apple couldn’t complete this request. Please try again."; return false
             }
         } catch { message = error.localizedDescription; return false }
     }
@@ -131,12 +169,15 @@ import Security
         if let ms = result["expiresAt"] as? Double { periodEnd = Date(timeIntervalSince1970: ms / 1000) }
     }
     func restore() async {
+        guard !busy else { message = "Apple is already processing your request."; return }
         busy = true; defer { busy = false }
         do { try await AppStore.sync(); await refresh(); if !hasAppleSubscription { message = "No active Applaz Plus subscription was found for this Apple Account." } }
         catch { message = error.localizedDescription }
     }
     func manage() async {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
+        guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first(where: { $0.activationState == .foregroundActive && $0.windows.contains { $0.isKeyWindow } }) else {
+            message = "Reopen this screen so Apple can show your subscription settings."; return
+        }
         do { try await AppStore.showManageSubscriptions(in: scene); await refresh() }
         catch { message = error.localizedDescription }
     }
