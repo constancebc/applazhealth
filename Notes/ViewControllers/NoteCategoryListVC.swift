@@ -324,15 +324,17 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
         
         cell.btnDelete.removeTarget(self, action: #selector(self.btnDeletePressed(_:)), for: .touchUpInside)
         cell.btnUpdate.removeTarget(self, action: #selector(self.btnUpdatePressed(_:)), for: .touchUpInside)
-        cell.btnUpdate.setImage(UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal)
+        cell.btnUpdate.setImage(UIImage(systemName: CollaborationStore.shared.icon(kind: "legacy", sourceID: note.categoryKey ?? ""), withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal)
         cell.btnUpdate.tintColor = ApplazAppearance.accent
-        cell.btnUpdate.accessibilityLabel = CollaborationStore.shared.match(kind: "legacy", sourceID: note.categoryKey ?? "") == nil ? "Invite friends to notebook" : "Friends in this notebook"
+        cell.btnUpdate.accessibilityLabel = !CollaborationStore.shared.hasEditors(kind: "legacy", sourceID: note.categoryKey ?? "") ? "Invite friends to notebook" : "Friends in this notebook"
         cell.btnUpdate.removeAction(identifiedBy: UIAction.Identifier("InviteNotebookFriends"), for: .touchUpInside)
         cell.btnUpdate.addAction(UIAction(identifier: UIAction.Identifier("InviteNotebookFriends")) { [weak self, weak cell] _ in
             guard let self, let cell, let row = self.tblViewNoteCateoryTitle.indexPath(for: cell)?.row, let id = self.notes[row].categoryKey else { return }
             CollaborationPresentation.invite(kind: "legacy", sourceID: id, from: self)
         }, for: .touchUpInside)
+        cell.btnShare.removeTarget(self, action: #selector(self.btnSharedPressed(_:)), for: .touchUpInside)
         cell.btnShare.addTarget(self, action: #selector(self.btnSharedPressed(_:)), for: .touchUpInside)
+        cell.btnShare.accessibilityLabel = (note.isPrivateNote == true ? "Private notebook. Make public" : "Public notebook. Make private")
         
         let moreIcon = UIImage(systemName: "ellipsis", withConfiguration: UIImage.SymbolConfiguration(pointSize: 20, weight: .regular))
         cell.btnDelete.setImage(moreIcon, for: .normal)
@@ -355,14 +357,14 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
         
         if self.notes[indexPath.row].isPrivateNote ?? false {
            // cell.btnShare.setTitle("Private", for: .normal)
-            let lockIcon = UIImage(systemName: "lock")?.withRenderingMode(.alwaysTemplate)
+            let lockIcon = UIImage(systemName: "lock", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular))?.withRenderingMode(.alwaysTemplate)
             cell.btnShare.setImage(lockIcon, for: .normal)
-            cell.btnShare.tintColor = .black
+            cell.btnShare.tintColor = ApplazAppearance.accent
         } else {
             //cell.btnShare.setTitle("Shared", for: .normal)
-            let globeIcon = UIImage(systemName: "globe.americas.fill")?.withRenderingMode(.alwaysTemplate)
+            let globeIcon = UIImage(systemName: "globe", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular))?.withRenderingMode(.alwaysTemplate)
             cell.btnShare.setImage(globeIcon, for: .normal)
-            cell.btnShare.tintColor = .black
+            cell.btnShare.tintColor = ApplazAppearance.accent
         }
         cell.backGroundView.layer.cornerRadius = 12
         cell.backGroundView.clipsToBounds = true
@@ -477,12 +479,12 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
             config.title = notebook.name
             config.subtitle = (notebook.isPrivate == false ? "Public · " : "Private · ") + String(notebook.notes.count) + " notes"
             if let count = CollaborationStore.shared.match(kind: "health", sourceID: notebook.id)?.editorCount, count > 0 { config.subtitle = String(notebook.notes.count) + " notes · " + String(count) + (count == 1 ? " friend" : " friends") }
-            config.image = UIImage(systemName: notebook.kind == "text" ? "book.closed" : "checklist")
+            config.image = nil
             config.imagePadding = 12; config.baseForegroundColor = .black
-            config.background.backgroundColor = ApplazAppearance.surface
+            config.background.backgroundColor = .clear
             config.background.cornerRadius = 14
             config.background.strokeColor = ApplazAppearance.outline
-            config.background.strokeWidth = 1
+            config.background.strokeWidth = 0
             button.configuration = config
             button.contentHorizontalAlignment = .leading
             button.addAction(UIAction { [weak self] _ in guard let self else { return }; if let shared = CollaborationStore.shared.match(kind: "health", sourceID: notebook.id) { CollaborationPresentation.open(shared.id, from: self) } else { WellnessPresentation.notebook(notebook.id, from: self) } }, for: .touchUpInside)
@@ -505,11 +507,21 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
             more.menu = UIMenu(children: options)
             more.widthAnchor.constraint(equalToConstant: 44).isActive = true
             let invite = UIButton(type: .system)
-            invite.setImage(UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal); invite.tintColor = ApplazAppearance.accent
-            invite.accessibilityLabel = CollaborationStore.shared.match(kind: "health", sourceID: notebook.id) == nil ? "Invite friends to " + notebook.name : "Friends in " + notebook.name
+            invite.setImage(UIImage(systemName: CollaborationStore.shared.icon(kind: "health", sourceID: notebook.id), withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal); invite.tintColor = ApplazAppearance.accent
+            invite.accessibilityLabel = !CollaborationStore.shared.hasEditors(kind: "health", sourceID: notebook.id) ? "Invite friends to " + notebook.name : "Friends in " + notebook.name
             invite.widthAnchor.constraint(equalToConstant: 36).isActive = true
             invite.addAction(UIAction { [weak self] _ in guard let self else { return }; CollaborationPresentation.invite(kind: "health", sourceID: notebook.id, from: self) }, for: .touchUpInside)
-            let row = UIStackView(arrangedSubviews: [button, invite, more]); row.spacing = 2
+            let visibility = UIButton(type: .system)
+            visibility.setImage(UIImage(systemName: notebook.isPrivate == false ? "globe" : "lock", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)), for: .normal)
+            visibility.tintColor = ApplazAppearance.accent
+            visibility.accessibilityLabel = "Visibility of " + notebook.name
+            visibility.accessibilityValue = notebook.isPrivate == false ? "Public" : "Private"
+            visibility.widthAnchor.constraint(equalToConstant: 42).isActive = true
+            visibility.isEnabled = notebook.id != "start-here-v1"
+            visibility.addAction(UIAction { [weak self] _ in self?.changeWellnessVisibility(notebook.id) }, for: .touchUpInside)
+            let content = UIStackView(arrangedSubviews: [visibility, button]); content.spacing = 0
+            content.backgroundColor = ApplazAppearance.surface; content.layer.cornerRadius = 14; content.layer.borderWidth = 1; content.layer.borderColor = ApplazAppearance.outline.cgColor
+            let row = UIStackView(arrangedSubviews: [content, invite, more]); row.spacing = 2
             row.heightAnchor.constraint(equalToConstant: 56).isActive = true
             stack.addArrangedSubview(row)
         }
@@ -524,6 +536,14 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
         tblViewNoteCateoryTitle.tableHeaderView = header
         tblViewNoteCateoryTitle.isHidden = false
         lblNotesCategoryNotFound.isHidden = true
+    }
+    private func changeWellnessVisibility(_ id: String) {
+        guard let notebook = WellnessStore.shared.notebooks.first(where: { $0.id == id }), id != "start-here-v1" else { return }
+        let makePrivate = notebook.isPrivate == false
+        let alert = UIAlertController(title: makePrivate ? "Make notebook private?" : "Share notebook to Newsfeed?", message: makePrivate ? "Your notebook will no longer appear in Newsfeed. Your collaborators can still edit it." : "Public notes can appear in Newsfeed. Meal logs, dated health reflections and AI chats stay private.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: makePrivate ? "Make private" : "Make public", style: .default) { _ in WellnessStore.shared.setVisibility(id, isPrivate: makePrivate) })
+        present(alert, animated: true)
     }
     @objc private func openPrivateNotebooks() { WellnessPresentation.library(from: self) }
 
@@ -650,57 +670,28 @@ class NoteCategoryListVC: UIViewController, UITableViewDelegate, UITableViewData
     private func updateDataBase() {
         
     }
-    @objc func btnSharedPressed(_ sender : UIButton) {
-        var note = self.notes[sender.tag]
-        guard let isPrivateNote = note.isPrivateNote else { return }
-        
-        if isPrivateNote {
-            // Ask here to make socialised
-            self.alertPermissionMessage(message: "Are you sure? \n To make your notebook public.") { isProceed in
-                if isProceed {
-                    // Update the note as social isPrivate = false
-                    if !(UserDefaults.standard.bool(forKey: Guest_Key)) {
-                        self.database.editDatabaseRecords(categoryNote: note.categoryName, titleNote: nil, categoryKey: note.categoryKey, titleKey: nil, note: nil, isPrivateNote: false){ (err) in
-                            if let _ = err {
-                                // Toast(text: "\(kCATEGORY_NOT_UPDATED)").show()
-                            } else {
-                                // Toast(text: "\(kCATEGORY_UPDATED)").show()
-                            }
-                        }
-                          self.getNotesAllCategories()
-                    } else {
-                        note.categoryName = note.categoryName
-                        self.notes.remove(at: sender.tag)
-                        self.notes.append(note)
-                        self.updateTableView()
+    @objc func btnSharedPressed(_ sender: UIButton) {
+        guard notes.indices.contains(sender.tag) else { return }
+        let original = notes[sender.tag]
+        let makePrivate = original.isPrivateNote != true
+        alertPermissionMessage(message: makePrivate ? "Make this notebook private?" : "Share this notebook to Newsfeed?") { [weak self] proceed in
+            guard proceed, let self else { return }
+            if UserDefaults.standard.bool(forKey: Guest_Key) {
+                guard self.notes.indices.contains(sender.tag) else { return }
+                self.notes[sender.tag].isPrivateNote = makePrivate
+                self.updateTableView()
+            } else {
+                self.database.editDatabaseRecords(categoryNote: original.categoryName, titleNote: nil, categoryKey: original.categoryKey, titleKey: nil, note: nil, isPrivateNote: makePrivate) { [weak self] error in
+                    DispatchQueue.main.async {
+                        guard let self else { return }
+                        if error == nil { self.getNotesAllCategories() }
+                        else { let alert = UIAlertController(title: "Couldn’t update visibility", message: "Please try again.", preferredStyle: .alert); alert.addAction(UIAlertAction(title: "OK", style: .default)); self.present(alert, animated: true) }
                     }
-                }
-            }
-        } else {
-            // Ask here to make private
-            self.alertPermissionMessage(message: "Are you sure? \n To make your notebook private.") { isProceed in
-                // Update the note as private = true
-                if !(UserDefaults.standard.bool(forKey: Guest_Key)) {
-                    self.database.editDatabaseRecords(categoryNote: note.categoryName, titleNote: nil, categoryKey: note.categoryKey, titleKey: nil, note: nil, isPrivateNote: true){ (err) in
-                        if let _ = err {
-                            // Toast(text: "\(kCATEGORY_NOT_UPDATED)").show()
-                        } else {
-                            // Toast(text: "\(kCATEGORY_UPDATED)").show()
-                        }
-                    }
-                      self.getNotesAllCategories()
-                } else {
-                    note.categoryName = note.categoryName
-                    self.notes.remove(at: sender.tag)
-                    self.notes.append(note)
-                    self.updateTableView()
                 }
             }
         }
     }
-    
-    
-    
+
     @IBAction func btnSettingPressed(_ sender: UIButton) {
         let settingsVC = self.storyboard?.instantiateViewController(withIdentifier: "SettingsVC") as! SettingsVC
         self.navigationController?.pushViewController(settingsVC, animated: true)

@@ -247,6 +247,7 @@ struct WellnessLibraryView: View {
     @State private var chat = false
     @State private var inviteID: String?
     @State private var invitationError: String?
+    @State private var visibilityID: String?
     var close: () -> Void
     var body: some View {
         NavigationView { ZStack { WellnessBackground(); VStack(spacing: 0) {
@@ -254,10 +255,11 @@ struct WellnessLibraryView: View {
             ScrollView { VStack(alignment: .leading, spacing: 16) {
                 HStack { Text("Your notebooks").font(.headline); Spacer(); Button { chat = true } label: { Image(systemName: "clock.arrow.circlepath") }.accessibilityLabel("Saved chats") }
                 ForEach(store.notebooks) { notebook in HStack(spacing: 10) {
+                    Button { visibilityID = notebook.id } label: { Image(systemName: notebook.isPrivate == false ? "globe" : "lock").font(.system(size: 18, weight: .regular)).foregroundColor(.applazAccent).frame(width: 36, height: 44) }.accessibilityLabel("Visibility of " + notebook.name).accessibilityValue(notebook.isPrivate == false ? "Public" : "Private").disabled(notebook.id == "start-here-v1")
                     NavigationLink(destination: notebookDestination(notebook.id)) {
-                        HStack { Image(systemName: notebook.kind == "text" ? "book.closed" : "checklist").foregroundColor(.applazAccent); VStack(alignment: .leading, spacing: 4) { Text(notebook.name).font(.headline); Text("\(notebook.isPrivate == false ? "Public" : "Private") · \(notebook.notes.count) \(notebook.notes.count == 1 ? "note" : "notes")").font(.caption).foregroundColor(.black.opacity(0.55)) }; Spacer() }
+                        HStack { VStack(alignment: .leading, spacing: 4) { Text(notebook.name).font(.headline); Text("\(notebook.isPrivate == false ? "Public" : "Private") · \(notebook.notes.count) \(notebook.notes.count == 1 ? "note" : "notes")").font(.caption).foregroundColor(.black.opacity(0.55)) }; Spacer() }
                     }.buttonStyle(.plain)
-                    Button { inviteID = notebook.id } label: { Image(systemName: "person.2").font(.system(size: 18, weight: .regular)).frame(width: 36, height: 44) }.accessibilityLabel(collaboration.match(kind: "health", sourceID: notebook.id) == nil ? "Invite friends to " + notebook.name : "Friends in " + notebook.name)
+                    Button { inviteID = notebook.id } label: { Image(systemName: collaboration.icon(kind: "health", sourceID: notebook.id)).font(.system(size: 18, weight: .regular)).frame(width: 36, height: 44) }.accessibilityLabel(!collaboration.hasEditors(kind: "health", sourceID: notebook.id) ? "Invite friends to " + notebook.name : "Friends in " + notebook.name)
                 }.wellnessCard() }
                 ForEach(collaboration.sharedWithMe) { shared in
                     NavigationLink(destination: CollaborativeNotebookView(notebookID: shared.id)) {
@@ -273,9 +275,15 @@ struct WellnessLibraryView: View {
         }}.foregroundColor(.black).tint(.applazAccent).navigationBarHidden(true) }
         .task { await collaboration.refresh() }
         .sheet(isPresented: Binding(get: { inviteID != nil }, set: { if !$0 { inviteID = nil } })) {
-            if let id = inviteID, let shared = collaboration.match(kind: "health", sourceID: id) { CollaborationMembersView(notebookID: shared.id, notebookName: shared.name) }
+            if let id = inviteID, let shared = collaboration.match(kind: "health", sourceID: id), (shared.editorCount ?? 0) > 0 { CollaborationMembersView(notebookID: shared.id, notebookName: shared.name) }
             else { CollaborationPeoplePicker(done: { people in let id = inviteID; inviteID = nil; guard let id else { return }; Task { do { _ = try await collaboration.invite(kind: "health", sourceID: id, people: people) } catch { invitationError = error.localizedDescription } } }, cancel: { inviteID = nil }) }
         }
+        .confirmationDialog("Notebook visibility", isPresented: Binding(get: { visibilityID != nil }, set: { if !$0 { visibilityID = nil } }), titleVisibility: .visible) {
+            if let id = visibilityID, let notebook = store.notebooks.first(where: { $0.id == id }) {
+                Button(notebook.isPrivate == false ? "Make private" : "Make public") { store.setVisibility(id, isPrivate: notebook.isPrivate == false); visibilityID = nil }
+            }
+            Button("Cancel", role: .cancel) { visibilityID = nil }
+        } message: { Text("Public notes can appear in Newsfeed. Collaborator editing access is separate.") }
         .alert("Couldn’t send invitations", isPresented: Binding(get: { invitationError != nil }, set: { if !$0 { invitationError = nil } })) { Button("OK", role: .cancel) {} } message: { Text(invitationError ?? "") }
         .navigationViewStyle(.stack).confirmationDialog("Copy guest notebooks and meals from this device into your signed-in account?", isPresented: $importGuest, titleVisibility: .visible) { Button("Copy my guest work") { store.importGuestWork() } }.sheet(isPresented: $create) { CreateWellnessNotebookView().modifier(WellnessHalfSheet()) }.sheet(isPresented: $chat) { NavigationView { SavedAIChatsView() } }
     }

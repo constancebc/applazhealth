@@ -268,7 +268,7 @@ exports.collaborationLegacyChanged = functions.database.ref("/Users/{owner}/Note
     if (!after) { tx.set(ref, {deleted: true, updatedAt: now}, {merge: true}); return; }
     const current = await readState(tx, ref, meta);
     const notes = new Map(current.notes.map(note => [note.id, note]));
-    let changed = current.name !== after["Category Name"];
+    let changed = current.name !== after["Category Name"] || current.isPrivate !== (after.isPrivateNote !== false);
     for (const note of fromLegacy(after, meta.sourceID, now).notes) {
       const prior = before[note.id]; const existing = notes.get(note.id);
       const differs = !prior || prior["Title name"] !== note.title || prior["Note name"] !== note.body;
@@ -276,7 +276,7 @@ exports.collaborationLegacyChanged = functions.database.ref("/Users/{owner}/Note
     }
     for (const id of Object.keys(before)) if (before[id] && typeof before[id] === "object" && before[id]["Title name"] !== undefined && !after[id]) { if (notes.delete(id)) changed = true; }
     if (!changed) return;
-    current.notes = [...notes.values()]; current.name = after["Category Name"] || current.name; current.updatedAt = now;
+    current.notes = [...notes.values()]; current.name = after["Category Name"] || current.name; current.isPrivate = after.isPrivateNote !== false; current.updatedAt = now;
     writeState(tx, ref, meta, current); tx.set(ref, {name: current.name, revision: meta.revision + 1, updatedAt: now}, {merge: true});
     return null;
   });

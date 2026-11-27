@@ -118,6 +118,8 @@ struct CollaborationMembersView: View {
         #endif
         return notebooks.first { $0.kind == kind && $0.sourceID == sourceID && $0.owner == Auth.auth().currentUser?.uid }
     }
+    func hasEditors(kind: String, sourceID: String) -> Bool { (match(kind: kind, sourceID: sourceID)?.editorCount ?? 0) > 0 }
+    func icon(kind: String, sourceID: String) -> String { hasEditors(kind: kind, sourceID: sourceID) ? "person.2" : "envelope.badge" }
     var sharedWithMe: [CollaborativeNotebook] { notebooks.filter { $0.role != "owner" } }
     func invite(kind: String, sourceID: String, people: [CollaborationPerson], notebookID: String? = nil) async throws -> String {
         var data: [String: Any] = ["kind": kind, "sourceID": sourceID, "recipients": people.map(\.id)]
@@ -155,7 +157,7 @@ struct CollaborationMembersView: View {
         controller.present(view, animated: true)
     }
     static func invite(kind: String, sourceID: String, notebookID: String? = nil, from controller: UIViewController) {
-        if let shared = notebookID.flatMap({ id in CollaborationStore.shared.notebooks.first { $0.id == id } }) ?? CollaborationStore.shared.match(kind: kind, sourceID: sourceID) {
+        if let shared = notebookID.flatMap({ id in CollaborationStore.shared.notebooks.first { $0.id == id } }) ?? CollaborationStore.shared.match(kind: kind, sourceID: sourceID), (shared.editorCount ?? 0) > 0 {
             let host = WellnessHostingController(rootView: CollaborationMembersView(notebookID: shared.id, notebookName: shared.name))
             host.modalPresentationStyle = .pageSheet
             host.sheetPresentationController?.detents = [.medium(), .large()]

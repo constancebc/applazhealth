@@ -143,3 +143,14 @@ The subscription hero is an open notebook spread with a daily checklist, a weekl
 The simulator build, eighteen policy checks, ESLint and local Firebase invitation/member-list integration passed. The editing-list endpoint and accepted friend counts are deployed to applaz-32772. Preview helpers are restricted to Debug, an explicit local preview environment and a signed-out account; they cannot grant production access.
 
 The accepted editing-list navigation and the subscription trial/purchase checks passed in the native simulator. Apple local StoreKit testing used product 299, a one-week free introductory offer and a $2.99 weekly price; tapping the real app button created the expected local StoreKit transaction with no charge. This is local purchase verification, not a claim that a production Apple Account was charged or that an App Store Connect offer was changed.
+
+
+## Separate Newsfeed visibility and collaboration — build 1.0.16 (16)
+
+Owned notebook rows restore a tappable outlined globe for Public and lock for Private. This controls Newsfeed visibility, separately from editing access. The existing More menu visibility action remains. The starter notebook retains its required private state.
+
+An outlined envelope invitation icon is shown until at least one editor accepts; the people icon appears only for accepted collaborators. Pending invitations and a public notebook alone do not mark it as collaboratively shared. The new-notebook invite control uses the same envelope symbol.
+
+Visibility confirmation respects Cancel, preserves notebook order and changes only the privacy flag for legacy guest rows, reports legacy cloud update failures, and preserves accepted editor membership. The legacy source-to-collaboration mirror now applies privacy-only changes without replacing note content or membership. Local Firebase integration, eighteen policy tests, lint and simulator compilation passed.
+
+The build-16 native preview was visually checked. Its automated tap test stalled while establishing the simulator automation session and is not reported as passing. Backend visibility/member preservation checks passed.

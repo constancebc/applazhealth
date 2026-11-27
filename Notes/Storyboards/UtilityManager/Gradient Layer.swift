@@ -597,7 +597,7 @@ final class NewNotebookViewController: UIViewController {
             return row
         }
         var friendsConfig = UIButton.Configuration.plain()
-        friendsConfig.title = "Invite friends"; friendsConfig.image = UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)); friendsConfig.imagePadding = 8
+        friendsConfig.title = "Invite friends"; friendsConfig.image = UIImage(systemName: "envelope.badge", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)); friendsConfig.imagePadding = 8
         friendsConfig.baseForegroundColor = ApplazAppearance.accent
         inviteFriendsButton.configuration = friendsConfig
         inviteFriendsButton.tintColor = ApplazAppearance.accent
