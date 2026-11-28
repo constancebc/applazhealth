@@ -20,6 +20,7 @@
 		487757436F5835988E320429 /* Pods_Notes.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88DF8D2C2EDEB8DF741A7784 /* Pods_Notes.framework */; };
 		5C9E78F72CB241F500BB0ADE /* LocalAuthentication.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8213A02A2035891000076B55 /* LocalAuthentication.framework */; };
 		5C9E79002CB243F100BB0ADE /* FirebaseAuth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9E78FF2CB243F100BB0ADE /* FirebaseAuth.framework */; };
+		7ED5F650182C4AA1B471A938 /* Notes/Wellness/Collaboration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E3977A7A264A19BC742C11 /* Notes/Wellness/Collaboration.swift */; };
 		7F78F4F62AF3675500FABF1A /* FirebaseAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93ABCEC21C7E14A0009AA98 /* FirebaseAuth.swift */; };
 		7F78F4F72AF3675500FABF1A /* IAPHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26F1C700226F66980023866F /* IAPHelper.swift */; };
 		7F78F4F82AF3675500FABF1A /* DashboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2416222A911ABE00B9D4EA /* DashboardController.swift */; };
@@ -149,7 +150,6 @@
 		D29654A2C1B445CF9480502C /* Notes/Wellness/MealDiaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74848677C066486E99929A5B /* Notes/Wellness/MealDiaryView.swift */; };
 		E7BCD447FF484C648E087B47 /* Notes/Wellness/WellnessRichEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4380AD875A44DF187700C05 /* Notes/Wellness/WellnessRichEditor.swift */; };
 		FCCC9C9F228E4F158D2700DE /* Notes/Wellness/WellnessOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = D86CEA98785C4D7CA7AC113D /* Notes/Wellness/WellnessOnboarding.swift */; };
-		7ED5F650182C4AA1B471A938 /* Collaboration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E3977A7A264A19BC742C11 /* Collaboration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -175,6 +175,7 @@
 		04D0544C2B1B8EB900A3BCA5 /* SearchNotesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchNotesViewController.swift; sourceTree = "<group>"; };
 		04E593132AC01A4500F3144A /* TextFieldWithPadding.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextFieldWithPadding.swift; sourceTree = "<group>"; };
 		248110FEB48E4E08A96EBF70 /* Notes/Wellness/WellnessScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes/Wellness/WellnessScreens.swift; sourceTree = SOURCE_ROOT; };
+		24E3977A7A264A19BC742C11 /* Notes/Wellness/Collaboration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes/Wellness/Collaboration.swift; sourceTree = SOURCE_ROOT; };
 		2600E4E32280892200A47A09 /* IntroPurchaseVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroPurchaseVC.swift; sourceTree = "<group>"; };
 		26103F3E22AADF1D004048B2 /* config.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = config.swift; sourceTree = "<group>"; };
 		26103F3F22AADF1D004048B2 /* ScrollableBottomSheetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScrollableBottomSheetViewController.swift; sourceTree = "<group>"; };
@@ -317,7 +318,6 @@
 		D86CEA98785C4D7CA7AC113D /* Notes/Wellness/WellnessOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes/Wellness/WellnessOnboarding.swift; sourceTree = SOURCE_ROOT; };
 		DF261EABB02ED3151D67B7A3 /* Pods-Notes.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Notes.debug.xcconfig"; path = "Target Support Files/Pods-Notes/Pods-Notes.debug.xcconfig"; sourceTree = "<group>"; };
 		F4380AD875A44DF187700C05 /* Notes/Wellness/WellnessRichEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes/Wellness/WellnessRichEditor.swift; sourceTree = SOURCE_ROOT; };
-		24E3977A7A264A19BC742C11 /* Collaboration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes/Wellness/Collaboration.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -499,7 +499,7 @@
 				74848677C066486E99929A5B /* Notes/Wellness/MealDiaryView.swift */,
 				4BF6274E138141CAB5270252 /* Notes/Wellness/WellnessModels.swift */,
 				68127F5F255E48B2A4148DE1 /* Notes/Wellness/WellnessDesign.swift */,
-				24E3977A7A264A19BC742C11 /* Collaboration.swift */,
+				24E3977A7A264A19BC742C11 /* Notes/Wellness/Collaboration.swift */,
 				472B5BED89E240C08F30460E /* Notes/Wellness/SubscriptionCenter.swift */,
 				59CF798721F9E66B00D9504C /* Whirlpost.entitlements */,
 				8218026E2033129500DF4F74 /* notes.sqlite */,
@@ -1092,7 +1092,7 @@
 				D29654A2C1B445CF9480502C /* Notes/Wellness/MealDiaryView.swift in Sources */,
 				9316F720F9F44EFDB7BAE4D9 /* Notes/Wellness/WellnessModels.swift in Sources */,
 				3A6CD19A12F743369C5572AF /* Notes/Wellness/WellnessDesign.swift in Sources */,
-				7ED5F650182C4AA1B471A938 /* Collaboration.swift in Sources */,
+				7ED5F650182C4AA1B471A938 /* Notes/Wellness/Collaboration.swift in Sources */,
 				9E910DE2D054430A86ECB7B5 /* Notes/Wellness/SubscriptionCenter.swift in Sources */,
 				7F78F4F62AF3675500FABF1A /* FirebaseAuth.swift in Sources */,
 				7F78F4F72AF3675500FABF1A /* IAPHelper.swift in Sources */,
@@ -1232,7 +1232,7 @@
 				CODE_SIGN_ENTITLEMENTS = Whirlpost.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_TEAM = ZT2T7RXXRZ;
 				EXCLUDED_ARCHS = "";
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = arm64;
@@ -1244,7 +1244,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.16;
+				MARKETING_VERSION = 1.0.17;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -1374,7 +1374,7 @@
 				CODE_SIGN_ENTITLEMENTS = Whirlpost.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_TEAM = ZT2T7RXXRZ;
 				EXCLUDED_ARCHS = "";
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = arm64;
@@ -1386,7 +1386,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.16;
+				MARKETING_VERSION = 1.0.17;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"$(inherited)",

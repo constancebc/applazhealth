@@ -170,3 +170,12 @@ Opening an own saved regular note now prioritizes the authenticated Firebase acc
 The final simulator compilation passed. Visible Apple confirmation-dialog checks on the existing and clean simulator did not reach the button tap because simulator automation stalled; they are not reported as passing. Earlier tests with disabled Apple dialogs do not prove that the payment sheet appeared. No real TestFlight purchase or App Store Connect offer change has been claimed.
 
 Standalone subscription entry points now present their screen when no UIKit navigation controller is available. Manage Subscription also selects a foreground key-window scene and reports a missing presentation context instead of returning silently. The final build including these entry-point changes passed. Actual Apple checkout remains unverified on a physical iPhone/TestFlight; the installed phone app must receive build 18 to include these changes.
+
+
+## Subscription catalog and first-use AI permission — build 1.0.17 (19)
+
+The subscription footer now occupies its own layout space below the scrolling content rather than overlaying the feature card. Empty StoreKit catalog responses retry twice before reporting unavailability; payment authorization is never retried automatically. The unavailable action reads Try again. The client still requests product 299 for bundle com.applaz. An empty catalog cannot be converted into a real product or trial in client code: live subscription availability, storefront coverage, agreements and exact product association must be checked in App Store Connect.
+
+The long AI permission toggle is replaced by a short first-use Allow/Not now prompt naming OpenAI and the data sent. Existing recorded consent is respected, and subsequent requests proceed without a repeated prompt. No AI request is sent on refusal or before the server saves permission. AI privacy retains a short explanation and Turn off AI sharing action. Start Here no longer includes consent instructions; only the unchanged generated guide is updated, preserving user edits. This retains Apple App Review Guideline 5.1.2(i) explicit third-party AI permission.
+
+The final simulator compilation for build 19 passed. Live StoreKit catalog availability and purchase remain unresolved without authenticated App Store Connect access; automatic retries are not reported as proof that the live subscription is purchasable.

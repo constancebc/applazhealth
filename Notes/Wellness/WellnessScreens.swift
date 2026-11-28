@@ -49,7 +49,8 @@ struct SubscriptionWelcomeView: View {
     var body: some View {
         ZStack {
             WellnessBackground()
-            ScrollView {
+            VStack(spacing: 0) {
+              ScrollView {
                 VStack(spacing: 18) {
                     HStack {
                         Button(action: onClose) { Image(systemName: "xmark").font(.system(size: 17)).frame(width: 44, height: 44) }
@@ -74,10 +75,13 @@ struct SubscriptionWelcomeView: View {
                         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.applazAccent.opacity(0.12)))
                 }.padding(.horizontal, 24).padding(.bottom, 12).frame(maxWidth: 490)
                     .frame(maxWidth: .infinity)
+              }
+              purchaseArea
+                .fixedSize(horizontal: false, vertical: true)
+                .background(WellnessBackground())
             }
         }
         .foregroundColor(.black).tint(.applazAccent).navigationBarHidden(true)
-        .safeAreaInset(edge: .bottom, spacing: 0) { purchaseArea }
         .task { await subscription.loadProduct() }
         .alert("Your subscription", isPresented: $showPurchaseMessage) {
             Button("OK", role: .cancel) {}
@@ -111,7 +115,7 @@ struct SubscriptionWelcomeView: View {
             } label: {
                 HStack(spacing: 9) {
                     if subscription.busy || subscription.loadingProduct { ProgressView().tint(.applazAccent) }
-                    Text(subscription.busy ? "Connecting to Apple…" : subscription.loadingProduct ? "Loading…" : subscription.eligibleTrial ? "Start free trial" : "Continue")
+                    Text(subscription.busy ? "Connecting to Apple…" : subscription.loadingProduct ? "Loading…" : subscription.product == nil ? "Try again" : subscription.eligibleTrial ? "Start free trial" : "Continue")
                 }
             }.buttonStyle(ApplazBubbleButtonStyle())
                 .accessibilityIdentifier("SubscriptionPurchase")
@@ -226,12 +230,13 @@ struct AIPrivacyView: View {
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 20) {
             Text("Your notebooks, your choice").font(.title3)
-            Text("Account and social features use Firebase to save your account, profile pictures, messages and notes. Notes you mark public can be seen by other people; private health notebooks are not posted to Newsfeed.")
-            Text("When you ask AI, Applaz sends your question and the selected notebook, note or routine history to OpenAI to generate an answer. Meal estimates also send the food description or photo you choose. Photos are compressed before processing. Your health notebooks are private and are not posted to Newsfeed.")
-            Text("AI can make mistakes. Meal calories are estimates: review portions and calories before saving. Insights support reflection, not medical advice. Do not include information you do not want processed.")
-            Text("Private notebook data, saved AI conversations and charts are kept on this device and, when signed in and cloud service is available, in your Firebase account. You can delete conversations in Your chats. Guest work stays on this device. Revoking consent prevents new AI requests; it does not erase saved notebooks.")
-            Text("Ask my notebooks uses relevant excerpts from your own regular and health notebooks. Asking about one selected note does not include unrelated private notebooks or meal logs.")
-            Toggle("Allow selected content to be sent to OpenAI", isOn: Binding(get: { subscription.aiConsent }, set: { allowed in Task { do { try await subscription.consent(allowed) } catch { self.error = error.localizedDescription } } }))
+            Text("AI requests send your questions, relevant notebook content and routine history, and any meal descriptions or photos you choose to OpenAI. Applaz asks permission before your first request.")
+            Text("You can delete saved conversations in Your chats. AI answers and calorie estimates can be inaccurate; review them before using them.")
+            if subscription.aiConsent {
+                Button("Turn off AI sharing") { Task { do { try await subscription.consent(false) } catch { self.error = error.localizedDescription } } }
+            } else {
+                Text("You’ll be asked when you first use AI.").font(.subheadline).foregroundColor(.secondary)
+            }
             if let error { Text(error).font(.footnote) }
             Link("OpenAI privacy policy", destination: URL(string: "https://openai.com/policies/privacy-policy/")!)
         }.padding(24) }.foregroundColor(.black).navigationTitle("AI privacy").navigationBarHidden(false)

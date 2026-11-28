@@ -66,7 +66,6 @@ struct MealEntryView: View {
             if let photo, let image = UIImage(data: photo) { Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 160).cornerRadius(12) }
             Button { estimate() } label: { Label("Estimate meal · \(photo == nil ? 1 : 2) credits", systemImage: "sparkles") }.disabled(busy || (description.isEmpty && photo == nil))
             if busy { HStack { Spacer(); AIThinkingOrb(); Spacer() } }
-            if !subscription.aiConsent { NavigationLink("Allow AI processing", destination: AIPrivacyView()) }
             if let error { Text(error).font(.footnote) }
             if !items.isEmpty { Text("Review your estimate").font(.headline) }
             ForEach($items) { $item in VStack(alignment: .leading, spacing: 8) {

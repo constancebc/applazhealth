@@ -1,6 +1,6 @@
 {
-  "version": "1.0.16",
-  "build": 18,
+  "version": "1.0.17",
+  "build": 19,
   "nativeSimulatorCaptures": true,
   "samplePeople": true,
   "appleTrialPreview": "Apple local StoreKit test configuration, not an App Store Connect change",
@@ -16,14 +16,16 @@
     "Globe/lock and invitation/accepted-editor icons visually verified in native simulator",
     "Newsfeed visibility preserves accepted members in local Firebase integration",
     "Build 17 continental globe and custom unbadged invitation glyph visually verified in the native notebook screen",
-    "Build 18 simulator compilation passed, including checkout scene presentation, full capsule tap region, standalone presentation and authenticated own-note ownership"
+    "Build 18 simulator compilation passed, including checkout scene presentation, full capsule tap region, standalone presentation and authenticated own-note ownership",
+    "Build 19 simulator compilation passed: separated subscription footer, empty-catalog retries, first-use AI permission, shorter privacy information and unchanged-generated-guide cleanup"
   ],
   "unverified": [
     "Real two-device account flow",
     "Production Apple purchase and restore",
     "OS push delivery",
     "Build 16 simulator tap check stalled at startup; not marked passed",
-    "Build 18 visible Apple confirmation tests stalled before the button tap on existing and clean simulators; not passed"
+    "Build 18 visible Apple confirmation tests stalled before the button tap on existing and clean simulators; not passed",
+    "Live Apple product 299 returns no product in the supplied phone screenshot; App Store Connect availability and actual purchase remain unresolved"
   ],
   "previewBuilds": {
     "notebooks.png": 17,

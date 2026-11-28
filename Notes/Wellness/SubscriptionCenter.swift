@@ -36,6 +36,7 @@ import Security
     private var signedTransaction: String?
     private var productLoad: Task<Void, Never>?
     private var trialLoad: Task<Void, Never>?
+    private var consentPromptActive = false
     init() {
         foreground = NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification).sink { [weak self] _ in
             Task { @MainActor in await self?.loadProduct(); await self?.refresh() }
@@ -74,17 +75,27 @@ import Security
             completion.timeout = Task { @MainActor in
                 do { try await Task.sleep(nanoseconds: 20_000_000_000) } catch { return }
                 request.cancel()
-                completion.finish(.failure(WellnessAPI.failure("Apple is taking longer to respond. Tap Continue to try again.")))
+                completion.finish(.failure(WellnessAPI.failure("Apple is taking longer to respond. Please try again.")))
             }
         }
     }
+    // Apple can briefly return an empty catalog during storefront startup.
+    // Retry only metadata; never automatically retry a payment authorization.
+    private func requestAvailableAppleProduct() async throws -> Product? {
+        for attempt in 0..<3 {
+            if let loaded = try await requestAppleProduct() { return loaded }
+            if attempt < 2 { try await Task.sleep(nanoseconds: UInt64(attempt + 1) * 1_000_000_000) }
+        }
+        return nil
+    }
+
     private func fetchProduct() async {
         if !busy { message = nil }
         Task { serviceReady = (try? await WellnessAPI.call("wellnessStatus", [:])["ready"] as? Bool) == true }
         do {
-            guard let loaded = try await requestAppleProduct() else {
+            guard let loaded = try await requestAvailableAppleProduct() else {
                 product = nil; eligibleTrial = false
-                message = "Apple couldn’t load this subscription. Tap Continue to try again."
+                message = "This membership isn’t available from Apple right now. Please try again shortly."
                 return
             }
             let period = loaded.subscription?.subscriptionPeriod
@@ -187,11 +198,33 @@ import Security
         guard owner == Auth.auth().currentUser?.uid else { return }
         aiConsent = result["consent"] as? Bool == true
     }
+    private func ensureAIConsent(for owner: String) async throws {
+        guard !aiConsent else { return }
+        guard !consentPromptActive else { throw WellnessAPI.failure("Please finish the AI permission prompt first.") }
+        guard let window = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive })?.windows.first(where: { $0.isKeyWindow }),
+            let presenter = UIApplication.topViewController(base: window.rootViewController),
+            presenter.viewIfLoaded?.window != nil, !(presenter is UIAlertController), !presenter.isBeingDismissed else {
+            throw WellnessAPI.failure("Reopen this screen to allow AI, then try again.")
+        }
+        consentPromptActive = true
+        defer { consentPromptActive = false }
+        let allowed: Bool = await withCheckedContinuation { continuation in
+            let alert = UIAlertController(title: "Use AI with Applaz?", message: "To answer your requests, Applaz sends your questions, relevant notebook content and routine history, and any meal descriptions or photos you choose to OpenAI. Allow this for AI features?", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Not now", style: .cancel) { _ in continuation.resume(returning: false) })
+            alert.addAction(UIAlertAction(title: "Allow", style: .default) { _ in continuation.resume(returning: true) })
+            presenter.present(alert, animated: true)
+        }
+        guard owner == Auth.auth().currentUser?.uid else { throw WellnessAPI.failure("Your account changed. Please try again.") }
+        guard allowed else { throw WellnessAPI.failure("Nothing was sent to AI. You can allow it next time.") }
+        try await consent(true)
+        guard owner == Auth.auth().currentUser?.uid, aiConsent else { throw WellnessAPI.failure("AI permission couldn’t be saved. Please try again.") }
+    }
     func ask(question: String, context: String, image: Data? = nil, meal: Bool = false, metrics: [AIMetric] = [], structured: Bool = false, expectedUID: String? = nil) async throws -> [String: Any] {
         guard let owner = Auth.auth().currentUser?.uid else { throw WellnessAPI.failure("Sign in to use your AI credits.") }
         if let expectedUID, expectedUID != owner { throw WellnessAPI.failure("Your account changed. Reopen this chat.") }
         guard hasAppleSubscription else { throw WellnessAPI.failure("Applaz Plus includes AI chat, insights and meal estimates. Subscribe or restore a purchase to continue.") }
-        guard aiConsent else { throw WellnessAPI.failure("Choose Allow in AI privacy before sharing selected content with AI.") }
+        try await ensureAIConsent(for: owner)
         var payload: [String: Any] = ["question": question, "context": String(decoding: context.utf8.prefix(11000), as: UTF8.self), "meal": meal, "requestID": UUID().uuidString]
         if structured {
             payload["structured"] = true
